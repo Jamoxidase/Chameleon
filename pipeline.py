@@ -148,12 +148,13 @@ class PalindromeParseStealth(ParseStealth):
         t = {'A':'T','C':'G','T':'A','G':'C'}
         return ''.join([t[i] for i in seq[::-1]]) == seq
     
-def writeFile(motif: set, outfile: str, sortBool: bool):
+def writeFile(motif: set, outfile: str, sortBool: bool, header: str):
     '''
     writes stealth output to DNAworks format file
     '''
     file_p = open(outfile,"w") if type(outfile) == str else outfile
     with file_p as fd:
+        fd.write(f"Run Options: {header}\n")
         if sortBool:    
             'explicit sort by length first, then alphabetical'
             for seq in sorted(list(motif),key= lambda x : (len(x),x)):
@@ -173,7 +174,7 @@ def main():
     parser.add_argument("--palindrome",'-p',default=False,action='store_true',help='palindrome output')
     args = parser.parse_args()
     conserved = PalindromeParseStealth(args.infile) if args.palindrome else ParseStealth(args.infile)
-    writeFile(conserved,args.outfile,args.sorted)
+    writeFile(conserved,args.outfile,args.sorted," ".join(sys.argv))
 
 if __name__ == "__main__":
     main()
