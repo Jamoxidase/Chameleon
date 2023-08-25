@@ -8,6 +8,14 @@ import toml
 import sys
 
 class StealthFileGen:
+    """
+    Reads genome file in genbank or FASTA format,
+    Writes CDS fasta file and Sequence fasta file
+    
+    CDS file Filename -> self.CDS_file 
+    
+    Sequence file Filename -> self.SEQ_file
+    """
 
     def _validArg(genome: str):
         'helper func: checks valid args'
@@ -86,6 +94,11 @@ class StealthFileGen:
         return
 
 class PlasmidParser:
+    """
+    Reads in an annotated plasmid file in genbank format,
+    parses mutable regions from CDS/ORF annotations,
+    takes statistics for total mutable range
+    """
 
     def _validArg(self, plasmid_infile: str) -> bool:
         'helper func: checks for valid input'
@@ -297,3 +310,4 @@ class PlasmidParser:
         self.removed = self.total - sum([len(x) for x in mutable_regions])
         print(self.total,self.removed)
         return mutable_regions
+
