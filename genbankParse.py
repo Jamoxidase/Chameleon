@@ -1,34 +1,87 @@
 from Bio import SeqIO
-from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SimpleLocation
 from typing import Iterator
+import sys
 
 tempfile = 'tests/edge_case.gb'
 
-def Stealth_CDS_Extract(gbfile: str) -> Iterator:
-    """
-    Reads a genbank file and yields CDS/ORF features for Codon Optimization
+class StealthFileGen:
+    def _validArg(self,plasmid:str,genome:str):
+        'helper func: checks valid args'
+        p_valid,g_valid = False,False,False
+        p_valid = plasmid.endswith(".gb")  or plasmid.endswith('.gbk')
+        g_valid= genome.endswith('.fasta') or genome.endswith('.gb') or genome.endswith('.gbk')
+        return p_valid,g_valid
 
-    A generator that yields CDS features in FASTA format
+    def _writeCDS(self,gbfile: str):
+        'helper func: writes CDS to file, returns file name'
+        outfile = gbfile[:gbfile.find('.')]+"_CDS.fasta"
+        with open(outfile, 'w') as fd:
+            SeqIO.write(self.Stealth_CDS_Extract(gbfile),fd,'fasta')  
+        return outfile
 
-    Used to produce data for codon usage statistics
-    """
-    gb = SeqIO.parse(gbfile,'genbank') 
-    count = 0 # Used ID CDS regions, not important
-    for rec in gb:
-        for feature in rec.features:
-            count += 1
-            if feature.type == 'CDS' or feature.type == 'ORF':
-                out = feature.extract(rec)
+    def _writeSeq(self,gbfile: str):  
+        'helper func: writes SEQ to file, returns file name'
+        outfile = gbfile[:gbfile.find('.')]+"_CDS.fasta"
+        with open(outfile, 'w') as fd:
+            for rec in SeqIO.parse(gbfile,'genbank'):
+                SeqIO.write(rec,fd,'fasta')
+        return outfile
+    
+    def __init__(self, plasmid_infile: str, genome_infile: str) -> None:
+        '''
+        Constructor: Validates inputs, writes to files in FASTA format, saves file names
 
-                '''Set the description to 'product' qualifier if avaiable. Else 'label' qualifier or [null] if labels are not present'''
-                out.description = feature.qualifiers.get('product',feature.qualifiers.get("label",["null"]))[0]
+        Args: 
+        plasmid_infile (str): annotated plasmid file in genbank format
+        genome_infile (str): genome file in FASTA or genbank format
 
-                out.name = 'TEMP CDS HEADER'
-                out.id = f'CDS_{count} CODON STATS'
-                yield out
-    return
+        self.CDS_file -> written CDS file
+        self.SEQ_file -> written SEQ file
+        '''
+        p_bool,g_bool = self._validArg(plasmid_infile,genome_infile)
+        if not p_bool:
+            print(f"Plasmid Input File needs to be GenBank file (.gb || .gbk). Got: {plasmid_infile}",file=sys.stderr)
+            exit()
+        if not g_bool:
+            print(f"Genome File needs to be FASTA file (.fasta) or GenBank file (.gb || .gbk). Got {genome_infile}",file = sys.stderr)
+            exit()
+        if genome_infile.endswith(".fasta"):
+            '''future -> handle FASTA file, Use ORF finder'''
+            print(f"Genome Infile: FASTA files not currently supported",file = sys.stderr)
+            exit()
+        else:
+            self.CDS_file = self._writeCDS(genome_infile)
+        self.SEQ_file = self._writeSeq(genome_infile)
 
+        
+    def Stealth_CDS_Extract(gbfile: str) -> Iterator:
+        """
+        Reads a genbank file and yields CDS/ORF features for Codon Optimization
+
+        A generator that yields CDS features in FASTA format
+
+        Used to produce data for codon usage statistics
+        """
+        gb = SeqIO.parse(gbfile,'genbank') 
+        count = 0 # Used ID CDS regions, not important
+        for rec in gb:
+            for feature in rec.features:
+                count += 1
+                if feature.type == 'CDS' or feature.type == 'ORF':
+                    out = feature.extract(rec)
+
+                    '''Set the description to 'product' qualifier if avaiable. Else 'label' qualifier or [null] if labels are not present'''
+                    out.description = feature.qualifiers.get('product',feature.qualifiers.get("label",["null"]))[0]
+
+                    out.name = 'TEMP CDS HEADER'
+                    out.id = f'CDS_{count} CODON STATS'
+                    yield out
+        return
+
+
+class PlasmidParse:
+    pass
 
 def parsePlasmid(gbfile: str) -> tuple[list[SimpleLocation]]:
     avoid,cds = [],[]
@@ -43,9 +96,8 @@ def parsePlasmid(gbfile: str) -> tuple[list[SimpleLocation]]:
                 cds.append((feature.location, feature.location.start % 3))
     return avoid,cds
 
-one,two = parsePlasmid(tempfile)
 def _trimStart(loc_list: list[SimpleLocation], cds: SimpleLocation)  -> list[SimpleLocation]:
-    ref = SimpleLocation(cds.start,cds.start+3,cds.strand)
+    ref = SimpleLocation(cds.start,cds.start+3,cds.strand) if cds.strand > 0 else SimpleLocation(cds.end-3,cds.end,cds.strand)
     for i in range(len(loc_list)):
         loc = loc_list[i]
         if loc.start < ref.start and loc.end > ref.end:
@@ -55,7 +107,7 @@ def _trimStart(loc_list: list[SimpleLocation], cds: SimpleLocation)  -> list[Sim
         if loc.start in ref:
             loc_list[i]= SimpleLocation(ref.end,loc.end,loc.strand)
             break
-        elif loc.end in ref:
+        elif loc.end in ref or loc.end == ref.end:
             loc_list[i] = SimpleLocation(loc.start,ref.start,loc.strand)
             break
     return
@@ -94,14 +146,17 @@ def _removeOverlap(loc_list: list[SimpleLocation],cds: SimpleLocation) -> list[S
             new[-1][0] = cds.end
         elif loc.end in cds or loc.end == cds.end:
             'truncates end'
-            new[-1][1] = cds.start
+            new[-1][1] = cds.start+1
         ret.extend([SimpleLocation(i,j,loc.strand) for i,j in new])
+    
+
     return ret
 
 def _windowCorrection(old: list[list[SimpleLocation],int,SimpleLocation], st_bound: int, ed_bound: int) -> list[list[SimpleLocation],int,SimpleLocation]:
     loc,fm,parent = old
     new = SimpleLocation(st_bound,ed_bound,parent.strand)
     dummy = []
+    
     for i in loc:
         if st_bound > i.end:
             continue
@@ -113,6 +168,8 @@ def _windowCorrection(old: list[list[SimpleLocation],int,SimpleLocation], st_bou
         elif i.end in new or i.end == new.end:
             dummy.append(SimpleLocation(st_bound,i.end,i.strand))
             continue 
+
+        
     return [dummy,fm,new]
 
 def _defineMutable(location: tuple[list[SimpleLocation]]) -> list[SimpleLocation]:
@@ -146,9 +203,6 @@ def _defineMutable(location: tuple[list[SimpleLocation]]) -> list[SimpleLocation
         mut_range = [SimpleLocation(start=rng[0],end=rng[1],strand=cds.strand) for rng in bounds ]
         temp.append([mut_range,frame,cds])
 
-    pp(temp)
-
-
     'Trimming starts'   
     for i in range(len(temp)):
         tLoc = temp[i][0]
@@ -156,23 +210,20 @@ def _defineMutable(location: tuple[list[SimpleLocation]]) -> list[SimpleLocation
         reg = temp[i][2]
         window = temp[i+1:]
         for j in range(len(window)):
-            _,parent_frame,parent_cds = window[j]
-            if parent_cds.start in reg:
-                _trimStart(temp[i][0],parent_cds)
-        trimmed = SimpleLocation(reg.start+3,reg.end,reg.strand)
-        if tLoc[0].start == reg.start:
-            temp[i][0][0] = SimpleLocation(trimmed.start,tLoc[0].end,tLoc[0].strand)
-        temp[i][2] = trimmed
-                
-
-    'frame adjusts mutable fragments to lie in frame of parent CDS'
-  
-    for i in range(len(temp)):
-        temp[i][0] = _frameAdj(temp[i][0],temp[i][1])
-
-    
+            _,parent_frame,del_cds = window[j]
+            if (del_cds.start in reg and del_cds.strand > 0) or (del_cds.end in reg and del_cds.strand < 0):
+                _trimStart(temp[i][0],del_cds)
+                tLoc = temp[i][0]
+        if reg.strand > 0:
+            trimmed = SimpleLocation(reg.start+3,reg.end,reg.strand)
+            if tLoc[0].start == reg.start:
+                temp[i][0][0] = SimpleLocation(trimmed.start,tLoc[0].end,tLoc[0].strand)
+        else:
+            trimmed = SimpleLocation(reg.start,reg.end-3,reg.strand)
+            if tLoc[-1].end == reg.end:
+                temp[i][0][-1] = SimpleLocation(tLoc[-1].start,trimmed.end,tLoc[-1].strand)
+    'sorts regions by CDS length, compares larger CDS to smaller CDS to remove overlap'
     temp = sorted(temp,key = lambda x: len(x[2]), reverse=True)
-
     'remove overlaps'
     for i in range(len(temp)):
         frag = temp[i][0]
@@ -187,16 +238,24 @@ def _defineMutable(location: tuple[list[SimpleLocation]]) -> list[SimpleLocation
                 continue
             if parent_cds.start in region or parent_cds.end in region:
                 if parent_frame != frm:
-                   temp[i][0] = _removeOverlap(frag,parent_cds)
-                   frag = temp[i][0]
+                    temp[i][0] = _removeOverlap(frag,parent_cds)
+                    frag = temp[i][0]
             if parent_cds.start in region and parent_cds.end in region:
                 temp[i+j+1][2] = None
             elif parent_cds.start in region:
                 temp[i+j+1] = _windowCorrection(window[j],region.end,parent_cds.end)
             elif parent_cds.end in region:
                 temp[i+j+1] = _windowCorrection(window[j],parent_cds.start,region.start)
-    pp(temp)
-               
+   
+    'frame adjusts mutable fragments to lie in frame of parent CDS'
+    for i in range(len(temp)):
+        temp[i][0] = _frameAdj(temp[i][0],temp[i][1])
+        
+    
+    mutable_regions = sorted([region for CDS,_,tf in temp for region in CDS if tf is not None],key = lambda x: x.start)
+    print([str(x) for x in mutable_regions])
+
+
 
             
 
@@ -214,9 +273,9 @@ def pp(a):
 
     
               
-           
+one,two = parsePlasmid(tempfile)         
                 
-defineMutable((one,two))
+_defineMutable((one,two))
 
 # print('\n\n')
 # print(sorted(one,key= lambda x: len(x[0]), reverse=True))
