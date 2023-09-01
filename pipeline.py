@@ -48,7 +48,7 @@ class FastAreader:
 
         with self.doOpen() as fileH:
             header = ''
-            sequence = '\n'
+            sequence = ''
 
             # skip to first fasta header
             line = fileH.readline()
@@ -60,9 +60,9 @@ class FastAreader:
                 if line.startswith('>'):
                     yield header, sequence
                     header = line[1:].rstrip()
-                    sequence = '\n'
+                    sequence = ''
                 else:
-                    sequence += line
+                    sequence += line.strip()
         yield header, sequence
 
 class ParseStealth(set):
@@ -148,9 +148,12 @@ class PalindromeParseStealth(ParseStealth):
         helper function - boolean check on reverse compliment
         '''
         t = {'A':'T','C':'G','T':'A','G':'C'}
-        return ''.join([t[i] for i in seq[::-1]]) == seq
+        if len(seq) % 2 == 0:
+            return ''.join([t[i] for i in seq[::-1]]) == seq
+        else:
+            return "".join([t[i] for i in seq[:len(seq)//2:-1]]) == seq[:len(seq)//2]
     
-def writeFile(motif: set, outfile: str, sortBool: bool, header: str):
+def writeFile(motif: set, outfile: str, sortBool: bool, header: str, dnaWorks: bool):
     '''
     writes stealth output to DNAworks format file
     '''
@@ -159,11 +162,14 @@ def writeFile(motif: set, outfile: str, sortBool: bool, header: str):
         fd.write(f"Run Options: {header}\n")
         if sortBool:    
             'explicit sort by length first, then alphabetical'
-            for seq in sorted(list(motif),key= lambda x : (len(x),x)):
-                fd.write(seq+" [temp]\n")
+            for i,seq in enumerate(sorted(list(motif),key= lambda x : (len(x),x))):
+                descriptor = f" re{i}" if dnaWorks else f" [temp]"
+                fd.write(f"{descriptor}\t{seq}\n")
         else:
             for seq in list(motif):
-                fd.write(seq+" [temp]\n")
+                descriptor = f" re{i}" if dnaWorks else f" [temp]"
+                fd.write(f"{descriptor}\t{seq}\n")
+    
 
 def main():
     '''
@@ -174,9 +180,12 @@ def main():
     parser.add_argument("--outfile",'-o',default=sys.stdout,type=str,action='store',help='output file')
     parser.add_argument("--sorted",'-s',default=False,action='store_true',help='sort output')
     parser.add_argument("--palindrome",'-p',default=False,action='store_true',help='palindrome output')
+    parser.add_argument("--dnaWorks",'-d',default=False,action='store_true',help='DNAWorks compatible output')
     args = parser.parse_args()
     conserved = PalindromeParseStealth(args.infile) if args.palindrome else ParseStealth(args.infile)
-    writeFile(conserved,args.outfile,args.sorted," ".join(sys.argv))
+    writeFile(conserved,args.outfile,args.sorted," ".join(sys.argv),args.dnaWorks)
+
+
 
 if __name__ == "__main__":
     main()
