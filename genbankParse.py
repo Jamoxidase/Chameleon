@@ -3,9 +3,13 @@
 
 from Bio import SeqIO
 from Bio.SeqFeature import SimpleLocation
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 from typing import Iterator
 import toml
 import sys
+from findORF import ORFfinder
+from pipeline import FastAreader
 
 class StealthFileGen:
     """
@@ -17,7 +21,7 @@ class StealthFileGen:
     Sequence file Filename -> self.SEQ_file
     """
 
-    def _validArg(genome: str):
+    def _validArg(self,genome: str):
         'helper func: checks valid args'
         g_valid = False,False,False
         g_valid= genome.endswith('.fasta') or genome.endswith('.gb') or genome.endswith('.gbk')
@@ -25,47 +29,76 @@ class StealthFileGen:
 
     def _writeCDS(self,gbfile: str):
         'helper func: writes CDS to file, returns file name'
-        with open(self.outfile+'_CDS.fasta', 'w') as fd:
+        with open(self.CDS_file, 'w') as fd:
             SeqIO.write(self.Stealth_CDS_Extract(gbfile),fd,'fasta')  
-        return self.outfile+'_CDS.fasta'
     
     def _writeSeq(self,gbfile: str):  
         'helper func: writes SEQ to file, returns file name'
         gb = SeqIO.parse(gbfile,'genbank')
         for rec in gb:
-            with open(self.outfile+'_SEQ.fasta', 'w') as fd:
+            with open(self.SEQ_file, 'w') as fd:
                 SeqIO.write(rec,fd,'fasta')
             break
-        return self.outfile+'_SEQ.fasta'
+    
+    def _fastaGenome(self,fasta: str):
+        reader = FastAreader(fasta)
+        with open(self.CDS_file,'w') as fd:
+            for header,seq in reader.readFasta():
+                genome = Seq(seq)
+                orfs = ORFfinder(seq,longestGene=True,minGene=200).geneCandidates
+                for i,j in enumerate(orfs):
+                    loc = SimpleLocation(j[0]-1, j[1], strand = 1 if j[3] > 0 else -1)
+                    rec = SeqRecord(loc.extract(genome))
+                    rec.description = "Predicted Protein Coding Sequence"
+                    rec.name = 'Predicted CDS HEADER'
+                    rec.id = f'CDS_{i} for CODON STATS'
+                    SeqIO.write(rec,fd,'fasta')
+            
+    def _get_SEQ_name(self,infile: str) -> str:
+        if infile != None:
+            if infile.endswith(".gb") or infile.endswith(".gbk"):
+                self.outfile = infile[:-3] if infile.endswith(".gb") else infile[:-4]
+                return self.outfile+'_SEQ.fasta'
+            else:
+                self.outfile = infile[:-6]
+                return infile
 
+    def _get_CDS_name(self) -> str:
+        return self.outfile+'_CDS.fasta'
+  
 ############################################################################################
 # Private Helper Functions
 ############################################################################################
 
-    def __init__(self, genome_infile: str) -> None:
+    def __init__(self, genome_infile: str = None) -> None:
         '''
         Constructor: Validates inputs, writes to files in FASTA format, saves file names
+        
+        Can be used for Stealth_CDS_Extract to produce a CDS generator for input file
 
         Args: 
-        genome_infile (str): genome file in FASTA or genbank format
+        (optional) genome_infile (str): genome file in FASTA or genbank format
 
         self.CDS_file -> written CDS file
         self.SEQ_file -> written SEQ file
         '''
-        g_bool = self._validArg(genome_infile)
-        
-        if not g_bool:
-            print(f"Genome File needs to be FASTA file (.fasta) or GenBank file (.gb || .gbk). Got {genome_infile}",file = sys.stderr)
-            exit()
+        if genome_infile != None:
+            
+            g_bool = self._validArg(genome_infile)
+            
+            if not g_bool:
+                print(f"Genome File needs to be FASTA file (.fasta) or GenBank file (.gb || .gbk). Got {genome_infile}",file = sys.stderr)
+                exit()
 
-        self.SEQ_file = self._writeSeq(genome_infile)
+            self.SEQ_file = self._get_SEQ_name(genome_infile) 
+            self.CDS_file = self._get_CDS_name()
 
-        if genome_infile.endswith(".fasta"):
-            '''future -> handle FASTA file, Use ORF finder'''
-            print(f"Genome Infile: FASTA files not currently supported",file = sys.stderr)
-            exit()
-        else:
-            self.CDS_file = self._writeCDS(genome_infile)
+            if genome_infile.endswith(".fasta"):
+                self._fastaGenome(genome_infile)
+            else:
+                self._writeSeq(genome_infile)
+                self._writeCDS(genome_infile)
+                
         
         
     def Stealth_CDS_Extract(self,gbfile: str) -> Iterator:
@@ -80,8 +113,8 @@ class StealthFileGen:
         count = 0 # Used ID CDS regions, not important
         for rec in gb:
             for feature in rec.features:
-                count += 1
                 if feature.type == 'CDS' or feature.type == 'ORF':
+                    count += 1
                     out = feature.extract(rec)
 
                     '''Set the description to 'product' qualifier if avaiable. Else 'label' qualifier or [null] if labels are not present'''
@@ -90,14 +123,16 @@ class StealthFileGen:
                     out.name = 'TEMP CDS HEADER'
                     out.id = f'CDS_{count} CODON STATS'
                     yield out
-            self.outfile = rec.name
-        return
+            return
+
 
 class PlasmidParser:
     """
     Reads in an annotated plasmid file in genbank format,
     parses mutable regions from CDS/ORF annotations,
     takes statistics for total mutable range
+    
+    Output: List[SimpleLocation()]
     """
 
     def _validArg(self, plasmid_infile: str) -> bool:
@@ -113,10 +148,11 @@ class PlasmidParser:
             for feature in rec.features:
                 if feature.type in {'source','gene'}:
                     continue
-                if not (feature.type in {'CDS','ORF'}):
-                    avoid.append((feature.location, feature.location.start % 3))
-                else:
+                if (feature.type in {'CDS','ORF'}):
                     cds.append((feature.location, feature.location.start % 3))
+                else:
+                    avoid.append((feature.location, feature.location.start % 3))
+            self.sequence = rec.seq
             break
         return avoid,cds
 
@@ -234,6 +270,7 @@ class PlasmidParser:
             for loc,_ in avoid:
                 if cds.start > loc.start and cds.end < loc.end:
                     'case: interior ORF to non-coding region'
+                    bounds = [[-1,-1]]
                     break
                 if bounds[-1][0] < loc.start and bounds[-1][1] >loc.end:
                     'case: non-coding region interior to ORF'
@@ -252,7 +289,7 @@ class PlasmidParser:
                 continue
             mut_range = [SimpleLocation(start=rng[0],end=rng[1],strand=cds.strand) for rng in bounds ]
             temp.append([mut_range,frame,cds])
-
+        
         'Trimming start codons'   
         for i in range(len(temp)):
             tLoc = temp[i][0]
@@ -272,10 +309,10 @@ class PlasmidParser:
                 trimmed = SimpleLocation(reg.start,reg.end-3,reg.strand)
                 if tLoc[-1].end == reg.end:
                     temp[i][0][-1] = SimpleLocation(tLoc[-1].start,trimmed.end,tLoc[-1].strand)
-
+        
         'sorts regions by CDS length, compares larger CDS to smaller CDS to remove overlap'
         temp = sorted(temp,key = lambda x: len(x[2]), reverse=True)
-
+        
         'remove overlaps'
         for i in range(len(temp)):
             frag = temp[i][0]
@@ -307,7 +344,25 @@ class PlasmidParser:
         
         'mutable region statistics - total covered region and mutable regions'
         self.total_coverage = sum([len(x[-1]) for x in temp if x[-1] is not None])
-        self.removed = self.total - sum([len(x) for x in mutable_regions])
-        print(self.total,self.removed)
+        self.removed = self.total_coverage - sum([len(x) for x in mutable_regions])
         return mutable_regions
 
+def main() :
+    '''
+    Implement a parser to interpret the command line arg string using argparse.
+    '''
+    import argparse
+    
+    parser = argparse.ArgumentParser(description = 'Reads in GenBank file, outputs FASTA file with CDS')
+    parser.add_argument("--genome",'-g',type=str,action='store',help='Input genome file')
+    parser.add_argument("--plasmid",'-p',type=str,action='store',help='Input plasmid file')
+    args = parser.parse_args()
+    StealthFileGen(args.genome)
+
+    
+if __name__ == "__main__":
+    # tempfile = "tests/pSPDY.gb"
+    # l = PlasmidParser(tempfile)
+    # ll = l.mutable_regions
+    # print(ll)
+    main()
