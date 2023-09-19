@@ -16,7 +16,7 @@ Author: Tyler Gaw
 
 
 import argparse,sys
-from ParseStealth import ParseStealth,PalindromeParseStealth
+from chameleontools.ParseStealth import ParseStealth,PalindromeParseStealth
 
 def writeFile(motif: set, outfile: str, sortBool: bool, header: str, dnaWorks: bool):
     '''
