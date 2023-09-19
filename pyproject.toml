@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "chameleon-tools"
+name = "chameleontools"
 version = "0.0.5"
 description = "A Stealth-based pipeline that optimizes plasmids for bacterial transformations in non-model organisms."
 authors = ["Your Name <you@example.com>"]
@@ -31,3 +31,7 @@ push = true
 [tool.bumpver.file_patterns]
 "pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
 "src/chameleontools/__init__.py" = ["{version}"]
+
+[tool.poetry.scripts]
+pstealth = "chameleontools.pipeline:main"
+
