@@ -1,11 +1,7 @@
 """
 TABI - UCSC iGEM 2023
-
 Modified from ORFfinder Class written for Winter 2022 BME160
-
 BME160 Professor: David L. Bernick
-
-Author: Tyler Gaw
 """
 
 # ORF finder used to parse FastA format genome files.
