@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "chameleon-tools"
+version = "0.0.1"
+description = "A Stealth-based pipeline that optimizes plasmids for bacterial transformations in non-model organisms."
+authors = ["Your Name <you@example.com>"]
+license = "CC BY"
+readme = "README.md"
+classifiers = [ 
+    "Programming Language :: Python :: 3"
+]
+repository = "https://gitlab.igem.org/2023/software-tools/ucsc" 
+
+[tool.poetry.dependencies]
+python = "^3.10"
+biopython = "^1.81"
+scipy = "^1.10.1"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.bumpver]
+current_version = "0.0.1"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "bump version {old_version} -> {new_version}"
+commit = true
+tag = true
+push = true
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
+"src/sanitycheckhaha/__init__.py" = ["{version}"]
