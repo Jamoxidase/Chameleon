@@ -14,7 +14,7 @@ from Bio.SeqFeature import SimpleLocation
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from typing import Iterator
-from chameleon_tools.ORFfinder import ORFfinder
+from chameleontools.ORFfinder import ORFfinder
 from FastAreader import FastAreader
 import sys
 
