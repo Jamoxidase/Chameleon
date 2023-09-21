@@ -19,6 +19,7 @@ Author: David L. Bernick
 from typing import Iterator
 import sys
 
+
 class FastAreader:
     """
     Define objects to read FastA files.
@@ -52,31 +53,31 @@ class FastAreader:
         else:
             return open(self.fname)
 
-    def readFasta(self) -> Iterator[tuple[str,str]]: 
+    def readFasta(self) -> Iterator[tuple[str, str]]:
         """
         Read an entire FastA record and return the sequence header/sequence
 
         Yields:
         tuple: header and sequence as a tuple
         """
-        header = ''
-        sequence = ''
+        header = ""
+        sequence = ""
 
         with self.doOpen() as fileH:
-            header = ''
-            sequence = ''
+            header = ""
+            sequence = ""
 
             # skip to first fasta header
             line = fileH.readline()
-            while not line.startswith('>'):
+            while not line.startswith(">"):
                 line = fileH.readline()
             header = line[1:].rstrip()
 
             for line in fileH:
-                if line.startswith('>'):
+                if line.startswith(">"):
                     yield header, sequence
                     header = line[1:].rstrip()
-                    sequence = ''
+                    sequence = ""
                 else:
                     sequence += line.strip()
         yield header, sequence
