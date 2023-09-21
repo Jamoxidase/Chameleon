@@ -19,7 +19,6 @@ Author: David L. Bernick
 from typing import Iterator
 import sys
 
-
 class FastAreader:
     """
     Define objects to read FastA files.
@@ -81,3 +80,5 @@ class FastAreader:
                 else:
                     sequence += line.strip()
         yield header, sequence
+
+__all__ = [FastAreader]

@@ -15,7 +15,7 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from typing import Iterator
 from chameleontools.ORFfinder import ORFfinder
-from FastAreader import FastAreader
+from chameleontools.FastAreader import FastAreader
 import sys
 
 
@@ -89,6 +89,8 @@ class StealthGenome:
         self.genome_sequence -> Biopython Seq() of input genome | array of Seq() if multiple fragment FastA file
 
         self.cds_sequence -> Iterator of Biopython SeqRecord for each CDS | array of SeqRecord if using FastA file
+        
+        self.input -> type of input file | "fasta" if FastA file, "genbank" if GenBank file
         """
         if genome_infile != None:
             g_bool = self._validArg(genome_infile)
@@ -104,9 +106,10 @@ class StealthGenome:
                 self.genome_sequence, self.cds_sequence = self._fastaGenome(
                     genome_infile
                 )
-
+                self.input = "fasta"
             else:
                 self.cds_sequence = self.Stealth_CDS_Extract(genome_infile)
+                self.input = "genbank"
 
     def Stealth_CDS_Extract(self, gbfile: str) -> Iterator[SeqRecord]:
         """
@@ -137,8 +140,7 @@ class StealthGenome:
                     yield out
             return  # Only accepts single entry genbank records
 
-
-class PlasmidParser:
+class PlasmidParse:
     """
     Reads in an annotated plasmid file in genbank format,
     parses mutable regions from CDS/ORF annotations,
@@ -409,3 +411,5 @@ class PlasmidParser:
         total_coverage = sum([len(x[-1]) for x in temp if x[-1] is not None])
         removed = self.total_coverage - sum([len(x) for x in mutable_regions])
         return mutable_regions, total_coverage, removed
+
+__all__ = [StealthGenome,PlasmidParse]

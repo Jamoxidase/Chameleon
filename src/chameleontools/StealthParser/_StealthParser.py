@@ -75,7 +75,6 @@ class ParseStealth(set):
             else:
                 yield from self._permute(string, cur_idx + 1, cur_perm + cur_let)
 
-
 class PalindromeParseStealth(ParseStealth):
     def __init__(self, file_path: str) -> set:
         """
@@ -113,3 +112,5 @@ class PalindromeParseStealth(ParseStealth):
                 "".join([t[i] for i in seq[: len(seq) // 2 : -1]])
                 == seq[: len(seq) // 2]
             )
+
+__all__ = [ParseStealth,PalindromeParseStealth]
