@@ -16,4 +16,4 @@ Author: David L. Bernick
 #     for head, seq in thisReader.readFasta():
 #         print (head,seq)
 
-from ._FastAreader import FastAreader
+from ._FastAreader import *
