@@ -5,17 +5,20 @@ import random
 
 
 class InvalidAA(KeyError):
+    """
+    Inherits from KeyError
+    """
     def __init__(self, message) -> None:
         super().__init__(message)
 
-
 class CDSanalyzer:
-    """
-    Analyzes CDS regions
-    """
+    """Counts up and calculates frequency of codons given a CDS
 
+    Returns:
+        CDSanalyzer: Contains counts and frequencies of codons from given CDS collection
+    """
     dnaCodonTable = {
-        # RNA codon table
+        # DNA codon table
         # T
         "TTT": "F",
         "TCT": "S",
@@ -89,13 +92,12 @@ class CDSanalyzer:
     validAA = set(dnaCodonTable.values())
 
     def __init__(
-        self, input: str | SeqParser.StealthGenome | list[Bio.SeqRecord.SeqRecord]
+        self, input: str | SeqParser.StealthGenome | list[Bio.SeqRecord.SeqRecord] = None
     ) -> None:
-        """
-        self.addCDS() -> adds a CDS for analysis
-        self.getUsage() -> dictionary of codon usage grouped by AA translation | (optional) gathers codon usage by AA
-        self.getFrequency() -> dictionary of codon frequency grouped by AA translation | (optional) gathers codon frequency by AA
-        self.len() -> total length of analyzed CDS regions
+        """Creates dictionaries to store and calculate codon counts and frequencies
+
+        Args:
+            input (str | SeqParser.StealthGenome | list[Bio.SeqRecord.SeqRecord]): FastA file or an iterable sample of CDS 
         """
         self.codonUsage = {
             "F": {"TTT": 0, "TTC": 0},
@@ -128,6 +130,11 @@ class CDSanalyzer:
         self._calculate()
 
     def _read_file(self, input: str) -> None:
+        """Helper method, reads in FastA file
+
+        Args:
+            input (str): FastA file
+        """
         freader = FastAreader.FastAreader(input)
         for _, cds in freader.readFasta():
             cds = cds.seq
@@ -139,6 +146,11 @@ class CDSanalyzer:
     def _read_StealthGenome(
         self, input: SeqParser.StealthGenome | list[Bio.SeqRecord.SeqRecord]
     ) -> None:
+        """Helper method, reads CDS from StealthGenome object or iterable of SeqRecord
+
+        Args:
+            input (SeqParser.StealthGenome | list[Bio.SeqRecord.SeqRecord]): Iterable SeqRecord of CDS
+        """
         input = input.cds_sequence if type(input) == SeqParser.StealthGenome else input
         for cds in input:
             cds = cds.seq
@@ -148,6 +160,8 @@ class CDSanalyzer:
                 self.codonUsage[codon_to_aa][codon] += 1
 
     def _calculate(self):
+        """Helper method, calculates codon frequency from given codon counts
+        """
         for aa, codon_dict in self.codonUsage.items():
             aa_sum = sum(codon_dict.values())
             self.count = +aa_sum
@@ -158,6 +172,18 @@ class CDSanalyzer:
                     self.codonFreq[aa][codon] = self.codonUsage[aa][codon] / aa_sum
 
     def _format_aa_arg(self, aa: str):
+        """Helper method, type and input checking AA inputs
+
+        Args:
+            aa (str): Single Letter AA code
+
+        Raises:
+            TypeError: Non-string type is input
+            InvalidAA: Invalid AA code is input
+
+        Returns:
+            str: formatted single letter AA
+        """
         if type(aa) != str:
             raise TypeError(f"Expected {type(str())} got {type(aa)}")
         aa = aa.upper()
@@ -166,6 +192,11 @@ class CDSanalyzer:
         return aa
 
     def addCDS(self, cds: str) -> None:
+        """Adds input CDS to existing dictionary
+
+        Args:
+            cds (str): CDS sequence, in frame
+        """
         for i in range(len(cds), 3):
             codon = cds[i : i + 3]
             codon_to_aa = self.dnaCodonTable[codon]
@@ -173,46 +204,91 @@ class CDSanalyzer:
         self._calculate()
 
     def len(self) -> int:
+        """Length
+
+        Returns:
+            int: NT count of all analyzes CDS 
+        """
         return self.count
 
     def getFrequency(
         self, aa: str = None
     ) -> dict[str, dict[str, float]] | dict[str, float]:
+        """Get the codon frequency table or codon frequency by AA
+
+        Args:
+            aa (str, optional): Single letter AA. Defaults to None.
+
+        Returns:
+            dict[str, dict[str, float]] | dict[str, float]: Entire codon frequency table or codon frequency by AA
+        """
         if aa == None:
             return self.codonFreq
         aa = self._format_aa_arg(aa)
         return self.codonFreq[aa]
 
     def getUsage(self, aa: str = None) -> dict[str, dict[str, int]] | dict[str, int]:
+        """Get the codon usage table or codon usage by AA
+
+        Args:
+            aa (str, optional): Single letter AA. Defaults to None.
+
+        Returns:
+            dict[str, dict[str, float]] | dict[str, float]: Entire codon usage table or codon usage by AA
+        """
         if aa == None:
             return self.codonUsage
         aa = self._format_aa_arg(aa)
         return self.codonUsage[aa]
 
-
 class CodonOptimizer:
     """
-    This is a basic codonOptimizer that takes codon useage data and a sequence
-    of aminoAcids as input and recapitulates the overall frequency of the
-    given input in the reverse-transcription of the AA seq. This should
-    roughly fit to levels of tRNA availibility.
+    This is a basic CodonOptimizer that takes codon usage data and regenerates sequences
+    roughly fit to levels of tRNA availibility in an organism.
     """
 
     def __init__(self, frequencies: dict):
+        """Initializes codon usage data
+
+        Args:
+            frequencies (dict): _description_
+        """
         self.synFreqDic = frequencies
 
-    def _weightedChoice(self, aa):
+    def _weightedChoice(self, aa: str):
+        """Generates a codon by weighted random given an AA
+
+        Args:
+            aa (str): Single letter AA 
+
+        Returns:
+            str: Weighted random codon from given AA
+        """
         codons = list(self.synFreqDic[aa].keys())
         frequencies = self.synFreqDic[aa].values()
         chosenCodon = random.choices(codons, weights=frequencies, k=1)[0]
         return chosenCodon
 
-    def assembleSeed(self, aaSequence):
+    def assembleSeed(self, aaSequence: str):
+        """Reverse translates a AA sequence based on codon usage statistics 
+
+        Args:
+            aaSequence (str): AA sequence to be reverse translated
+
+        Returns:
+            str: DNA coding sequence
+        """
+        
         dnaList = [self._weightedChoice(aa) for aa in aaSequence]
         dnaSeed = "".join(dnaList)
         return dnaSeed
 
     def getFrequency(self) -> dict[str, dict[str, float]]:
+        """Gets the codon usage of object
+
+        Returns:
+            dict[str, dict[str, float]]: Codon frequency grouped by AA
+        """
         return self.synFreqDic
 
 
