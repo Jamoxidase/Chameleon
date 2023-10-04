@@ -1,295 +1,160 @@
-#!/usr/bin/env python3
-# Name: Allison Jaballas (acjaball)
+import chameleontools.FastAreader as FastAreader
+import chameleontools.SeqParser as SeqParser
+import Bio.SeqRecord
+import random
 
-##########################################################################
-############################## FASTA READER ##############################
-##########################################################################
+class InvalidAA(KeyError):
+    def __init__(self, message) -> None:
+        super().__init__(message)
 
-import sys
-
-
-class FastAreader:
+class CDSanalyzer:
     """
-    Define objects to read FastA files.
-
-    instantiation:
-    thisReader = FastAreader ('testTiny.fa')
-    usage:
-    for head, seq in thisReader.readFasta():
-        print (head,seq)
+    Analyzes CDS regions 
     """
-
-    def __init__(self, fname=None):
-        """contructor: saves attribute fname"""
-        self.fname = fname
-
-    def doOpen(self):
-        """Handle file opens, allowing STDIN."""
-        if self.fname is None:
-            return sys.stdin
-        else:
-            return open(self.fname)
-
-    def readFasta(self):
-        """Read an entire FastA record and return the sequence header/sequence"""
-        header = ""
-        sequence = ""
-
-        with self.doOpen() as fileH:
-            header = ""
-            sequence = ""
-
-            # skip to first fasta header
-            line = fileH.readline()
-            while not line.startswith(">"):
-                line = fileH.readline()
-            header = line[1:].rstrip()
-
-            for line in fileH:
-                if line.startswith(">"):
-                    yield header, sequence
-                    header = line[1:].rstrip()
-                    sequence = ""
-                else:
-                    sequence += "".join(line.rstrip().split()).upper()
-
-        yield header, sequence
-
-
-########################################################################
-############################## NUC PARAMS ##############################
-########################################################################
-
-
-class NucParams:
-    """
-    Define objects to store counts of codons and amino acids from input sequence.
-    """
-
+    
     dnaCodonTable = {
-        # Second Base
-        # T             C             A             G
+        # RNA codon table
         # T
-        "TTT": "Phe",
-        "TCT": "Ser",
-        "TAT": "Tyr",
-        "TGT": "Cys",
-        "TTC": "Phe",
-        "TCC": "Ser",
-        "TAC": "Tyr",
-        "TGC": "Cys",
-        "TTA": "Leu",
-        "TCA": "Ser",
-        "TAA": "---",
-        "TGA": "---",
-        "TTG": "Leu",
-        "TCG": "Ser",
-        "TAG": "---",
-        "TGG": "Trp",
+        'TTT': 'F', 'TCT': 'S', 'TAT': 'Y', 'TGT': 'C',  # TxT
+        'TTC': 'F', 'TCC': 'S', 'TAC': 'Y', 'TGC': 'C',  # TxC
+        'TTA': 'L', 'TCA': 'S', 'TAA': '*', 'TGA': '*',  # TxA
+        'TTG': 'L', 'TCG': 'S', 'TAG': '*', 'TGG': 'W',  # TxG
         # C
-        "CTT": "Leu",
-        "CCT": "Pro",
-        "CAT": "His",
-        "CGT": "Arg",
-        "CTC": "Leu",
-        "CCC": "Pro",
-        "CAC": "His",
-        "CGC": "Arg",
-        "CTA": "Leu",
-        "CCA": "Pro",
-        "CAA": "Gln",
-        "CGA": "Arg",
-        "CTG": "Leu",
-        "CCG": "Pro",
-        "CAG": "Gln",
-        "CGG": "Arg",
+        'CTT': 'L', 'CCT': 'P', 'CAT': 'H', 'CGT': 'R',  # CxT
+        'CTC': 'L', 'CCC': 'P', 'CAC': 'H', 'CGC': 'R',  # CxC
+        'CTA': 'L', 'CCA': 'P', 'CAA': 'Q', 'CGA': 'R',  # CxA
+        'CTG': 'L', 'CCG': 'P', 'CAG': 'Q', 'CGG': 'R',  # CxG
         # A
-        "ATT": "Ile",
-        "ACT": "Thr",
-        "AAT": "Asn",
-        "AGT": "Ser",
-        "ATC": "Ile",
-        "ACC": "Thr",
-        "AAC": "Asn",
-        "AGC": "Ser",
-        "ATA": "Ile",
-        "ACA": "Thr",
-        "AAA": "Lys",
-        "AGA": "Arg",
-        "ATG": "Met",
-        "ACG": "Thr",
-        "AAG": "Lys",
-        "AGG": "Arg",
+        'ATT': 'I', 'ACT': 'T', 'AAT': 'N', 'AGT': 'S',  # AxT
+        'ATC': 'I', 'ACC': 'T', 'AAC': 'N', 'AGC': 'S',  # AxC
+        'ATA': 'I', 'ACA': 'T', 'AAA': 'K', 'AGA': 'R',  # AxA
+        'ATG': 'M', 'ACG': 'T', 'AAG': 'K', 'AGG': 'R',  # AxG
         # G
-        "GTT": "Val",
-        "GCT": "Ala",
-        "GAT": "Asp",
-        "GGT": "Gly",
-        "GTC": "Val",
-        "GCC": "Ala",
-        "GAC": "Asp",
-        "GGC": "Gly",
-        "GTA": "Val",
-        "GCA": "Ala",
-        "GAA": "Glu",
-        "GGA": "Gly",
-        "GTG": "Val",
-        "GCG": "Ala",
-        "GAG": "Glu",
-        "GGG": "Gly",
+        'GTT': 'V', 'GCT': 'A', 'GAT': 'D', 'GGT': 'G',  # GxT
+        'GTC': 'V', 'GCC': 'A', 'GAC': 'D', 'GGC': 'G',  # GxC
+        'GTA': 'V', 'GCA': 'A', 'GAA': 'E', 'GGA': 'G',  # GxA
+        'GTG': 'V', 'GCG': 'A', 'GAG': 'E', 'GGG': 'G'  # GxG
     }
-
-    def __init__(self, inString=""):
-        """Set up codon composition, amino acid composition, and nucleotide composition dictionaries for future use."""
-        self.inString = inString.upper()
-
-        self.codonComp = {
-            codon: 0 for codon in self.dnaCodonTable.keys()
-        }  # set up empty (0) dict for codon counts
-
-        self.aaComp = {
-            "Phe": 0,
-            "Leu": 0,
-            "Ser": 0,
-            "Tyr": 0,
-            "---": 0,
-            "Cys": 0,
-            "Trp": 0,
-            "Pro": 0,
-            "His": 0,
-            "Gln": 0,
-            "Arg": 0,
-            "Ile": 0,
-            "Met": 0,
-            "Thr": 0,
-            "Asn": 0,
-            "Lys": 0,
-            "Val": 0,
-            "Ala": 0,
-            "Asp": 0,
-            "Glu": 0,
-            "Gly": 0,
+    
+    validAA = set(dnaCodonTable.values())
+    
+    def __init__(self, input: str | SeqParser.StealthGenome | list[Bio.SeqRecord.SeqRecord]) -> None:
+        """
+        self.addCDS() -> adds a CDS for analysis
+        self.getUsage() -> dictionary of codon usage grouped by AA translation | (optional) gathers codon usage by AA
+        self.getFrequency() -> dictionary of codon frequency grouped by AA translation | (optional) gathers codon frequency by AA
+        self.len() -> total length of analyzed CDS regions
+        """
+        self.codonUsage = {
+            "F": {"TTT":0, "TTC":0},
+            "L": {"TTA":0, "TTG":0, "CTT":0, "CTC":0, "CTA":0, "CTG":0},
+            "S": {"TCT":0, "TCC":0, "TCA":0, "TCG":0, "AGT":0, "AGC":0},
+            "Y": {"TAT":0, "TAC":0},
+            "C": {"TGT":0, "TGC":0},
+            "W": {"TGG":0},
+            "P": {"CCT":0, "CCC":0, "CCA":0, "CCG":0},
+            "H": {"CAT":0, "CAC":0},
+            "Q": {"CAA":0, "CAG":0},
+            "R": {"CGT":0, "CGC":0, "CGA":0, "CGG":0, "AGA":0, "AGG":0},
+            "I": {"ATT":0, "ATC":0, "ATA":0},
+            "M": {"ATG":0},
+            "T": {"ACT":0, "ACC":0, "ACA":0, "ACG":0},
+            "N": {"AAT":0, "AAC":0},
+            "K": {"AAA":0, "AAG":0},
+            "V": {"GTT":0, "GTC":0, "GTA":0, "GTG":0},
+            "A": {"GCT":0, "GCC":0, "GCA":0, "GCG":0},
+            "D": {"GAT":0, "GAC":0},
+            "E": {"GAA":0, "GAG":0},
+            "G": {"GGT":0, "GGC":0, "GGA":0, "GGG":0},
+            "*": {"TAA":0, "TAG":0, "TGA":0},
         }
+        self.count = 0
+        self.codonFreq = {k:{} for k in self.codonUsage.keys()}
+        self._read_file(input) if type(input) == str else self._read_StealthGenome(input) 
+        self._calculate()
 
-        self.nucComp = {"A": 0, "C": 0, "G": 0, "T": 0, "U": 0, "N": 0}
-
-        self.addSequence(inString)
-
-    def addSequence(self, inSeq):
-        """Add nucleotide count totals and decode codon information to appropriate dictionaries."""
-        inSeq = self.inString.join(inSeq.split()).upper()
-
-        # count totals of each nucleotide from file input
-        for nuc in self.nucComp.keys():
-            self.nucComp[nuc] += inSeq.count(nuc)
-
-        # to decode codon -> AA
-        AA = [inSeq[n : n + 3] for n in range(0, len(inSeq), 3)]
-
-        # add to codonComp + aaComp dictionaries!
-        for codon in AA:
-            if codon in self.codonComp:
-                self.codonComp[codon] += 1
-                aa = self.dnaCodonTable[codon]
-                self.aaComp[aa] += 1
-
-    def nucComposition(self):
-        """Return dictionary counts of valid nucleotides from file input."""
-        return self.nucComp
-
-    def codonComposition(self):
-        """Return dictionary counts of codons from file input."""
-        return self.codonComp
-
-    def nucCount(self):
-        """Return sum of all the valid nucleotides based on nucComposition."""
-        return sum(self.nucComp.values())
-
-
-#!/usr/bin/env python3
-# Name: Allison Jaballas (acjaball)
-
-#############################################################################
-############################## GENOME ANALYZER ##############################
-#############################################################################
-
-
-class genomeAnalyzer:
+    def _read_file(self, input: str) -> None:
+        freader = FastAreader.FastAreader(input)
+        for _,cds in freader.readFasta():
+            cds = cds.seq
+            for i in range(len(cds),3):
+                codon = input[i:i+3]
+                codon_to_aa = self.dnaCodonTable[codon]
+                self.codonUsage[codon_to_aa][codon] += 1
+    
+    def _read_StealthGenome(self,input: SeqParser.StealthGenome | list[Bio.SeqRecord.SeqRecord]) -> None:
+        input = input.cds_sequence if type(input) == SeqParser.StealthGenome else input
+        for cds in input:
+            cds = cds.seq
+            for i in range(0,len(cds),3):
+                codon = cds[i:i+3]
+                codon_to_aa = self.dnaCodonTable[codon]
+                self.codonUsage[codon_to_aa][codon] += 1
+                
+    def _calculate(self):    
+        for aa,codon_dict in self.codonUsage.items():
+            aa_sum = sum(codon_dict.values())
+            self.count =+ aa_sum
+            for codon in codon_dict.keys():
+                if aa_sum == 0:
+                    self.codonFreq[aa][codon] = 1/len(codon_dict)
+                else:
+                    self.codonFreq[aa][codon] = self.codonUsage[aa][codon]/aa_sum
+                
+    def _format_aa_arg(self,aa: str):
+        if type(aa) != str:
+            raise TypeError(f"Expected {type(str())} got {type(aa)}")
+        aa = aa.upper()
+        if len(aa) != 1 or aa not in self.validAA:
+            raise InvalidAA(f"Invalid single-letter Amino Acid: {aa}")
+        return aa
+        
+                    
+    def addCDS(self,cds: str) -> None:
+        for i in range(len(cds),3):
+            codon = cds[i:i+3]
+            codon_to_aa = self.dnaCodonTable[codon]
+            self.codonUsage[codon_to_aa][codon] += 1
+        self._calculate()
+    
+    def len(self) -> int:
+        return self.count
+    
+    def getFrequency(self, aa: str = None) -> dict[str,dict[str,float]] | dict[str,float]:
+        if aa == None:
+            return self.codonFreq
+        aa = self._format_aa_arg(aa)
+        return self.codonFreq[aa]
+    
+    def getUsage(self, aa: str = None) -> dict[str,dict[str,int]] | dict[str,int]:
+        if aa == None:
+            return self.codonUsage
+        aa = self._format_aa_arg(aa)
+        return self.codonUsage[aa]
+       
+class CodonOptimizer:
     """
-    GenomeAnalyzer calls the methods from the classes imported from sequenceAnalyzer to calculate the
-    file input's sequence length, GC content, and relative codon usages. This program prepares the
-    summaries and final display of all the data.
-
-    Dictionaries are as follows:
-
-    totalCodonsPerAA = {codon:#count}
-    codonFractionUsed = {codon:fraction}
-
+    This is a basic codonOptimizer that takes codon useage data and a sequence
+    of aminoAcids as input and recapitulates the overall frequency of the
+    given input in the reverse-transcription of the AA seq. This should
+    roughly fit to levels of tRNA availibility.
     """
 
-    def __init__(self, filename=None):
-        """Constructor: saves attribute filename."""
-        self.calculations(filename)
+    def __init__(self, frequencies: dict):
+        self.synFreqDic = frequencies
 
-    def calculations(self, fastafile):
-        """Calculate the file input's sequence length and relative codon usages."""
-        myReader = FastAreader(fastafile)
-        myNuc = NucParams()
-        for head, seq in myReader.readFasta():
-            myNuc.addSequence(seq)
+    def _weightedChoice(self, aa):
+        codons = list(self.synFreqDic[aa].keys())
+        frequencies = self.synFreqDic[aa].values()
+        chosenCodon = random.choices(codons, weights=frequencies, k=1)[0]
+        return chosenCodon
 
-        seqLength = myNuc.nucCount() / 1000000
-        # print('sequence length = {:.2f} Mb'.format(seqLength))
-        # print()
-
-        codonCount = myNuc.codonComposition()  # shorthand version
-
-        # calculate fraction used
-        # set up dictionaries
-        # totalCodonsPerAA gets the total # of codons for each aa
-        codonFractionUsed = {}
-        totalCodonsPerAA = {
-            aa: sum(
-                count
-                for codon, count in myNuc.codonComp.items()
-                if myNuc.dnaCodonTable[codon] == aa
-            )
-            for aa in myNuc.aaComp
-        }
-
-        codonTot = 0
-
-        for codon, count in myNuc.codonComp.items():  # calculate fraction
-            aa = myNuc.dnaCodonTable[codon]  # the aa of each codon
-
-            if totalCodonsPerAA[aa] > 0:
-                codonFractionUsed[codon] = (
-                    count / totalCodonsPerAA[aa]
-                )  # builds the dict codonFractionUsed
-
-            codonTot += count
-
-        for codons in sorted(
-            codonCount.keys()
-        ):  # pull together all information and prepare to print
-            codCount = codonCount[codons]
-            fracCount = codonFractionUsed[codons]
-            aa = (
-                myNuc.dnaCodonTable[codons]
-                if myNuc.dnaCodonTable[codons] != "---"
-                else "End"
-            )
-            aaCount = myNuc.aaComp[aa] if aa != "End" else myNuc.aaComp["---"]
-
-            # codon freq calc: #codons/totalAA
-            codonUsage = (codCount / codonTot) * 1000
-
-            # print everything together
-            print(
-                "{:5} {:5} {:5d} {:5.2f} {:5.2f}".format(
-                    aa, codons, codCount, codonUsage, fracCount
-                )
-            )
-
-
-genomeAnalyzer("microcystis_blast_contigs_CDS.fasta")
+    def assembleSeed(self, aaSequence):
+        dnaList = [self._weightedChoice(aa) for aa in aaSequence]
+        dnaSeed = "".join(dnaList)
+        return dnaSeed
+    
+    def getFrequency(self) -> dict[str,dict[str,float]] :
+        return self.synFreqDic
+     
+__all__ = ["CDSanalyzer","CodonOptimizer", "InvalidAA"]
