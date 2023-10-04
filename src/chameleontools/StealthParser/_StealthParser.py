@@ -37,20 +37,22 @@ class ParseStealth(set):
         "N": ["A", "C", "G", "T"],
     }
 
-    def __init__(self, file_path: str | StealthV0 = sys.stdin, palindrome: bool = False):
+    def __init__(
+        self, file_path: str | StealthV0 = sys.stdin, palindrome: bool = False
+    ):
         """
         Constructor: Inherits from set\n
         args : <file_path> - File path to stealth output\n
         Output: Set containing expanded motifs
         """
         super().__init__()
-        if isinstance(file_path,StealthV0):
-            self._readStealth(file_path,palindrome)
-        else:    
-            self._readIn(file_path,palindrome)
-    
-    def _readStealth(self,obj: StealthV0, pal: bool) -> set:
-        for seq,_,t_f in obj.getOutput():
+        if isinstance(file_path, StealthV0):
+            self._readStealth(file_path, palindrome)
+        else:
+            self._readIn(file_path, palindrome)
+
+    def _readStealth(self, obj: StealthV0, pal: bool) -> set:
+        for seq, _, t_f in obj.getOutput():
             if pal:
                 if t_f:
                     for expanded_motif in self._permute(seq):
@@ -75,10 +77,9 @@ class ParseStealth(set):
                         for expanded_motif in self._permute(line[0]):
                             if self._isRevComp(expanded_motif):
                                 self.add(expanded_motif)
-                else: 
+                else:
                     for expanded_motif in self._permute(line[0]):
                         self.add(expanded_motif)
-                
 
     def _permute(self, string, cur_idx=0, cur_perm="") -> Iterator[str]:
         """
@@ -96,8 +97,6 @@ class ParseStealth(set):
                     yield from self._permute(string, cur_idx + 1, cur_perm + sub)
             else:
                 yield from self._permute(string, cur_idx + 1, cur_perm + cur_let)
-                
-    
 
     def _isRevComp(self, seq: str) -> bool:
         """

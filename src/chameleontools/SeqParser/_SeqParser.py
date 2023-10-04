@@ -13,7 +13,7 @@ from Bio import SeqIO
 from Bio.SeqFeature import SimpleLocation
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from typing import Iterator,Literal
+from typing import Iterator, Literal
 from chameleontools.ORFfinder import ORFfinder
 from chameleontools.FastAreader import FastAreader
 import sys
@@ -74,10 +74,10 @@ class StealthGenome:
 
         Class Attr.:
 
-        self.getGenome() -> array of Seq() 
+        self.getGenome() -> array of Seq()
 
         self.getCDS() -> Iterator of Biopython SeqRecord for each CDS | list of SeqRecord if using FastA file
-        
+
         self.filetype() -> type of input file | "fasta" if FastA file, "genbank" if GenBank file
         """
         if genome_infile != None:
@@ -111,7 +111,9 @@ class StealthGenome:
         gb = SeqIO.parse(gbfile, "genbank")
         count = 0
         for rec in gb:
-            self.genome_sequence = [rec.seq]  # define self.genome_sequence from genbank record
+            self.genome_sequence = [
+                rec.seq
+            ]  # define self.genome_sequence from genbank record
             for feature in rec.features:
                 if feature.type == "CDS" or feature.type == "ORF":
                     count += 1
@@ -127,15 +129,16 @@ class StealthGenome:
                     yield out
             return  # Only accepts single entry genbank records
 
-    def filetype(self) -> Literal["fasta","genbank"]:
+    def filetype(self) -> Literal["fasta", "genbank"]:
         return self.input
-    
+
     def getGenome(self) -> list[Seq]:
         return self.genome_sequence
-    
+
     def getCDS(self) -> Iterator[SeqRecord] | list[SeqRecord]:
         return self.cds_sequence
-        
+
+
 class PlasmidParse:
     """
     Reads in an annotated plasmid file in genbank format,
@@ -266,7 +269,7 @@ class PlasmidParse:
         plasmid_infiled (str): genome file in FASTA or genbank format
 
         Class Methods:
-        
+
         self.getGenBank() -> Biopython SeqRecord() of input plasmid, contains feature annotations
 
         self.getSeq() -> Biopython Seq() of input Plasmid
@@ -291,10 +294,12 @@ class PlasmidParse:
         temp_parse = self._parsePlasmid(plasmid_infile)
 
         temp = self.defineMutable(temp_parse)
-        
-        self.record = self.record 
-        
-        self.plasmid_sequence = self.record.seq # self.record -> Bio.SeqRecord of plasmid
+
+        self.record = self.record
+
+        self.plasmid_sequence = (
+            self.record.seq
+        )  # self.record -> Bio.SeqRecord of plasmid
 
         self.mutable_regions = temp[0]
         self.total_mutable = temp[1]
@@ -413,21 +418,21 @@ class PlasmidParse:
 
     def getSeq(self) -> Seq:
         return self.plasmid_sequence
-    
+
     def regions(self) -> list[SeqRecord]:
         return self.mutable_regions
-    
+
     def mutableCount(self) -> int:
         return self.total_mutable
-    
+
     def regionCount(self) -> int:
         return self.total_coverage
-    
+
     def unmutableCount(self) -> int:
-        return self.removed 
-    
+        return self.removed
+
     def getGenBank(self) -> SeqRecord:
         return self.record
-    
 
-__all__ = ["StealthGenome","PlasmidParse"]
+
+__all__ = ["StealthGenome", "PlasmidParse"]

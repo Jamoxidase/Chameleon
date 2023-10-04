@@ -11,6 +11,7 @@ BME160 Professor: David L. Bernick
 #     starts -> define set of valid start codons
 #     stop -> define set fo valid stop codons
 
+
 class ORFfinder:
     """
     ORF finder class that scans through a genome and reports ORFs from all frames
@@ -108,7 +109,8 @@ class ORFfinder:
             )
         ]
 
-    def get_genes(self) -> list[tuple[int,int,int,int]]:
+    def get_genes(self) -> list[tuple[int, int, int, int]]:
         return self.geneCandidates
+
 
 __all__ = ["ORFfinder"]

@@ -41,21 +41,21 @@ def main():
     """
     Commandline parse, executes file write
     """
-    script_name = re.split(r"\\|/",sys.argv[0])[-1]
+    script_name = re.split(r"\\|/", sys.argv[0])[-1]
     parser = argparse.ArgumentParser(
         description="Reads in Stealth file, outputs motifs in formatted file",
         usage=f"{script_name} -i <input file> -o <outfile | default stdout> -[optional]\n\t-s [sorted | default= False]\n\t-p [RC paindromes only | default= False]\n\t-d DNAworks compatible output",
     )
     parser.add_argument(
-        "--infile",
-        "-i",
-        type=str,
-        action="store",
-        help="input file",
-        required= True
+        "--infile", "-i", type=str, action="store", help="input file", required=True
     )
     parser.add_argument(
-        "--outfile", "-o", default=sys.stdout, type=str, action="store", help="output file"
+        "--outfile",
+        "-o",
+        default=sys.stdout,
+        type=str,
+        action="store",
+        help="output file",
     )
     parser.add_argument(
         "--sorted", "-s", default=False, action="store_true", help="sort output"
@@ -75,7 +75,7 @@ def main():
         help="DNAWorks compatible output",
     )
     args = parser.parse_args()
-    conserved = ParseStealth(args.infile,args.palindrome)
+    conserved = ParseStealth(args.infile, args.palindrome)
     header = f"{script_name} {' '.join(sys.argv[1:])}"
     writeFile(conserved, args.outfile, args.sorted, header, args.dnaWorks)
     # import os
@@ -87,6 +87,5 @@ def main():
 
     # # Access the working directory
     # current_directory = os.getcwd()
-    
-    # print(f"target path {target_path}, CWD {current_directory}")
 
+    # print(f"target path {target_path}, CWD {current_directory}")
