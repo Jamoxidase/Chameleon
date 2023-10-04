@@ -35,6 +35,5 @@ push = true
 
 [tool.poetry.scripts]
 pstealth = "chameleontools.pstealth:main"
-test1 = "chameleontools.StealthParser.pipeline:main"
 
 
