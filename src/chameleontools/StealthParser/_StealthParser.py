@@ -14,6 +14,7 @@ Author: Tyler Gaw
 #     conserved_motifs = motif_set_1.intersect(motif_set_2) -> set
 
 from typing import Iterator
+from chameleontools.Stealth import StealthV0
 import sys
 
 
@@ -36,27 +37,48 @@ class ParseStealth(set):
         "N": ["A", "C", "G", "T"],
     }
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str | StealthV0 = sys.stdin, palindrome: bool = False):
         """
         Constructor: Inherits from set\n
         args : <file_path> - File path to stealth output\n
         Output: Set containing expanded motifs
         """
         super().__init__()
-        self._readIn(file_path)
+        if isinstance(file_path,StealthV0):
+            self._readStealth(file_path,palindrome)
+        else:    
+            self._readIn(file_path,palindrome)
+    
+    def _readStealth(self,obj: StealthV0, pal: bool) -> set:
+        for seq,_,t_f in obj.getOutput():
+            if pal:
+                if t_f:
+                    for expanded_motif in self._permute(seq):
+                        if self._isRevComp(expanded_motif):
+                            self.add(expanded_motif)
+            else:
+                for expanded_motif in self._permute(seq):
+                    self.add(expanded_motif)
 
-    def _readIn(self, file_path: str) -> set:
+    def _readIn(self, file_path: str, pal: bool) -> set:
         """
         helper func - from file reads all motifs into set
         """
-        file_p = open(file_path, "r") if type(file_path) == str else sys.stdin
+        file_p = open(file_path, "r") if type(file_path) == str else file_path
         with file_p as fd:
-            while line := fd.readline():
-                if not line.startswith("N ="):
+            while line := fd.readline().strip():
+                if line.startswith("N ="):
                     continue
-                line = fd.readline().strip().split()
-                for expanded_motif in self._permute(line[0]):
-                    self.add(expanded_motif)
+                line = line.split()
+                if pal:
+                    if line[-1] == "Palindrome":
+                        for expanded_motif in self._permute(line[0]):
+                            if self._isRevComp(expanded_motif):
+                                self.add(expanded_motif)
+                else: 
+                    for expanded_motif in self._permute(line[0]):
+                        self.add(expanded_motif)
+                
 
     def _permute(self, string, cur_idx=0, cur_perm="") -> Iterator[str]:
         """
@@ -74,33 +96,10 @@ class ParseStealth(set):
                     yield from self._permute(string, cur_idx + 1, cur_perm + sub)
             else:
                 yield from self._permute(string, cur_idx + 1, cur_perm + cur_let)
+                
+    
 
-class PalindromeParseStealth(ParseStealth):
-    def __init__(self, file_path: str) -> set:
-        """
-        Constructor: Inherits from ParseStealth --> Set\n
-        args : <file_path> - File path to stealth output\n
-        Output: Set containing expanded RC palindrome motifs
-        """
-        super().__init__(file_path)
-
-    def _readIn(self, file_path: str) -> set:
-        """
-        helper func overload - from file reads palindromes into set
-        """
-        file_p = open(file_path, "r") if type(file_path) == str else sys.stdin
-        with file_p as fd:
-            while line := fd.readline():
-                if not line.startswith("N ="):  # Skip to first motif
-                    continue
-
-                line = fd.readline().strip().split()
-                if line[-1] == "Palindrome":
-                    for expanded_motif in self._permute(line[0]):
-                        if self._revComp(expanded_motif):
-                            self.add(expanded_motif)
-
-    def _revComp(self, seq: str) -> bool:
+    def _isRevComp(self, seq: str) -> bool:
         """
         helper function - boolean check on reverse compliment
         """
@@ -113,4 +112,5 @@ class PalindromeParseStealth(ParseStealth):
                 == seq[: len(seq) // 2]
             )
 
-__all__ = [ParseStealth,PalindromeParseStealth]
+
+__all__ = ["ParseStealth"]
