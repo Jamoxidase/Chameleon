@@ -13,7 +13,7 @@ from Bio import SeqIO
 from Bio.SeqFeature import SimpleLocation
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from typing import Iterator
+from typing import Iterator,Literal
 from chameleontools.ORFfinder import ORFfinder
 from chameleontools.FastAreader import FastAreader
 import sys
@@ -40,11 +40,11 @@ class StealthGenome:
         reader = FastAreader(fasta)
         CDS_records = []
         sequence = []
-        for frag, (header, seq) in enumerate(reader.readFasta()):
+        for frag, (_, seq) in enumerate(reader.readFasta()):
             genome = Seq(seq)
             orfs = ORFfinder(
                 seq, longestGene=True, minGene=200
-            ).geneCandidates  # array of estimated genes
+            ).get_genes()  # array of estimated genes
             for i, j in enumerate(orfs):
                 "Converting ORFfinder output to Biopython SimpleLocation"
                 loc = SimpleLocation(j[0] - 1, j[1], strand=1 if j[3] > 0 else -1)
@@ -59,18 +59,6 @@ class StealthGenome:
             sequence.append(genome)
         return CDS_records, sequence
 
-    def _get_SEQ_name(self, infile: str) -> str:
-        if infile != None:
-            if infile.endswith(".gb") or infile.endswith(".gbk"):
-                self.outfile = infile[:-3] if infile.endswith(".gb") else infile[:-4]
-                return self.outfile + "_SEQ.fasta"
-            else:
-                self.outfile = infile[:-6]
-                return infile
-
-    def _get_CDS_name(self) -> str:
-        return self.outfile + "_CDS.fasta"
-
     ############################################################################################
     # ^^^ Private Helper Functions ^^^
     ############################################################################################
@@ -82,15 +70,15 @@ class StealthGenome:
         Can be used for Stealth_CDS_Extract to produce a CDS generator for input file
 
         Args:
-        genome_infile (str): genome file in genbank or FASTA format
+        genome_infile (str): genome file in genbank or FastA format
 
         Class Attr.:
 
-        self.genome_sequence -> Biopython Seq() of input genome | array of Seq() if multiple fragment FastA file
+        self.getGenome() -> array of Seq() 
 
-        self.cds_sequence -> Iterator of Biopython SeqRecord for each CDS | array of SeqRecord if using FastA file
+        self.getCDS() -> Iterator of Biopython SeqRecord for each CDS | list of SeqRecord if using FastA file
         
-        self.input -> type of input file | "fasta" if FastA file, "genbank" if GenBank file
+        self.filetype() -> type of input file | "fasta" if FastA file, "genbank" if GenBank file
         """
         if genome_infile != None:
             g_bool = self._validArg(genome_infile)
@@ -103,12 +91,13 @@ class StealthGenome:
                 exit()
 
             if genome_infile.endswith(".fasta"):
-                self.genome_sequence, self.cds_sequence = self._fastaGenome(
+                self.cds_sequence, self.genome_sequence = self._fastaGenome(
                     genome_infile
                 )
                 self.input = "fasta"
             else:
                 self.cds_sequence = self.Stealth_CDS_Extract(genome_infile)
+                self.genome_sequence = self.genome_sequence
                 self.input = "genbank"
 
     def Stealth_CDS_Extract(self, gbfile: str) -> Iterator[SeqRecord]:
@@ -122,9 +111,7 @@ class StealthGenome:
         gb = SeqIO.parse(gbfile, "genbank")
         count = 0
         for rec in gb:
-            self.genome_sequence = (
-                rec.seq
-            )  # define self.genome_sequence from genbank record
+            self.genome_sequence = [rec.seq]  # define self.genome_sequence from genbank record
             for feature in rec.features:
                 if feature.type == "CDS" or feature.type == "ORF":
                     count += 1
@@ -140,6 +127,15 @@ class StealthGenome:
                     yield out
             return  # Only accepts single entry genbank records
 
+    def filetype(self) -> Literal["fasta","genbank"]:
+        return self.input
+    
+    def getGenome(self) -> list[Seq]:
+        return self.genome_sequence
+    
+    def getCDS(self) -> Iterator[SeqRecord] | list[SeqRecord]:
+        return self.cds_sequence
+        
 class PlasmidParse:
     """
     Reads in an annotated plasmid file in genbank format,
@@ -153,12 +149,12 @@ class PlasmidParse:
 
     def _parsePlasmid(
         self, gbfile: str
-    ) -> tuple[list[SimpleLocation], list[SimpleLocation], Seq]:
+    ) -> tuple[list[SimpleLocation], list[SimpleLocation]]:
         "helper func: Filters for CDS and noncoding sequence"
         avoid, cds = [], []
         gb = SeqIO.parse(gbfile, "genbank")
         for rec in gb:
-            sequence = rec.seq
+            self.record = rec
             for feature in rec.features:
                 if feature.type in {"source", "gene"}:
                     continue
@@ -166,9 +162,8 @@ class PlasmidParse:
                     cds.append((feature.location, feature.location.start % 3))
                 else:
                     avoid.append((feature.location, feature.location.start % 3))
-            self.sequence = rec.seq
             break  # Only handles single entry genbank records
-        return avoid, cds, sequence
+        return avoid, cds
 
     def _trimStart(
         self, loc_list: list[SimpleLocation], cds: SimpleLocation
@@ -270,17 +265,19 @@ class PlasmidParse:
         Args:
         plasmid_infiled (str): genome file in FASTA or genbank format
 
-        Class Attr.:
+        Class Methods:
+        
+        self.getGenBank() -> Biopython SeqRecord() of input plasmid, contains feature annotations
 
-        self.plasmid_sequence -> Biopython Seq() of input Plasmid
+        self.getSeq() -> Biopython Seq() of input Plasmid
 
-        self.mutable_regions -> array of Biopython SimpleLocation() ranges of mutable codons
+        self.regions() -> array of Biopython SimpleLocation() ranges of mutable codons
 
-        self.total_mutable -> final mutable regions on plasmid
+        self.mutableCount() -> final mutable regions on plasmid
 
-        self.removed -> number of removed basepairs from total CDS coverage
+        self.unmutableCount() -> number of removed basepairs from total CDS coverage
 
-        self.total_coverage -> Total CDS coverage before extracting mutable regions
+        self.regionCount() -> Total CDS coverage before extracting mutable regions
         """
         p_bool = self._validArg(plasmid_infile)
         if not p_bool:
@@ -293,9 +290,11 @@ class PlasmidParse:
         "Did this cause it was ugly when using tuple unpacking"
         temp_parse = self._parsePlasmid(plasmid_infile)
 
-        temp = self.defineMutable(temp_parse[0:2])
-
-        self.plasmid_sequence = temp_parse[2]
+        temp = self.defineMutable(temp_parse)
+        
+        self.record = self.record 
+        
+        self.plasmid_sequence = self.record.seq # self.record -> Bio.SeqRecord of plasmid
 
         self.mutable_regions = temp[0]
         self.total_mutable = temp[1]
@@ -409,7 +408,26 @@ class PlasmidParse:
 
         "mutable region statistics - total covered region and mutable regions"
         total_coverage = sum([len(x[-1]) for x in temp if x[-1] is not None])
-        removed = self.total_coverage - sum([len(x) for x in mutable_regions])
+        removed = total_coverage - sum([len(x) for x in mutable_regions])
         return mutable_regions, total_coverage, removed
 
-__all__ = [StealthGenome,PlasmidParse]
+    def getSeq(self) -> Seq:
+        return self.plasmid_sequence
+    
+    def regions(self) -> list[SeqRecord]:
+        return self.mutable_regions
+    
+    def mutableCount(self) -> int:
+        return self.total_mutable
+    
+    def regionCount(self) -> int:
+        return self.total_coverage
+    
+    def unmutableCount(self) -> int:
+        return self.removed 
+    
+    def getGenBank(self) -> SeqRecord:
+        return self.record
+    
+
+__all__ = ["StealthGenome","PlasmidParse"]

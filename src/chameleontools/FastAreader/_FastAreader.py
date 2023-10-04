@@ -81,4 +81,4 @@ class FastAreader:
                     sequence += line.strip()
         yield header, sequence
 
-__all__ = [FastAreader]
+__all__ = ["FastAreader"]

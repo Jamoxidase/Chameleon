@@ -15,8 +15,8 @@ Author: Tyler Gaw
 #         -d DNAworks compatible output
 
 
-import argparse, sys
-from chameleontools.ParseStealth import ParseStealth, PalindromeParseStealth
+import argparse, sys, re
+from chameleontools.StealthParser import ParseStealth
 
 
 def writeFile(motif: set, outfile: str, sortBool: bool, header: str, dnaWorks: bool):
@@ -41,20 +41,21 @@ def main():
     """
     Commandline parse, executes file write
     """
+    script_name = re.split(r"\\|/",sys.argv[0])[-1]
     parser = argparse.ArgumentParser(
         description="Reads in Stealth file, outputs motifs in formatted file",
-        usage=f"{sys.argv[0]} -i <input file | default= stdin> -o <outfile | default stdout> -[optional]\n\t-s [sorted | default= False]\n\t-p [RC paindromes only | default= False]\n\t-d DNAworks compatible output",
+        usage=f"{script_name} -i <input file> -o <outfile | default stdout> -[optional]\n\t-s [sorted | default= False]\n\t-p [RC paindromes only | default= False]\n\t-d DNAworks compatible output",
     )
     parser.add_argument(
         "--infile",
         "-i",
-        default=None,
         type=str,
         action="store",
-        help="input file directory",
+        help="input file",
+        required= True
     )
     parser.add_argument(
-        "--outfile", "-o", default=None, type=str, action="store", help="output file"
+        "--outfile", "-o", default=sys.stdout, type=str, action="store", help="output file"
     )
     parser.add_argument(
         "--sorted", "-s", default=False, action="store_true", help="sort output"
@@ -74,13 +75,18 @@ def main():
         help="DNAWorks compatible output",
     )
     args = parser.parse_args()
-    conserved = (
-        PalindromeParseStealth(args.infile)
-        if args.palindrome
-        else ParseStealth(args.infile)
-    )
-    writeFile(conserved, args.outfile, args.sorted, " ".join(sys.argv), args.dnaWorks)
+    conserved = ParseStealth(args.infile,args.palindrome)
+    header = f"{script_name} {' '.join(sys.argv[1:])}"
+    writeFile(conserved, args.outfile, args.sorted, header, args.dnaWorks)
+    # import os
+    # parser.add_argument("--file",'-f', nargs="?", default=".", help="Path to file or directory")
+    # args = parser.parse_args()
 
+    # # Get the absolute path of the file or directory specified
+    # target_path = os.path.abspath(args.file)
 
-if __name__ == "__main__":
-    main()
+    # # Access the working directory
+    # current_directory = os.getcwd()
+    
+    # print(f"target path {target_path}, CWD {current_directory}")
+
