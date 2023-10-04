@@ -126,7 +126,15 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(
         description="Stealth optimizes an input plasmid sequence to a given organism's genome",
-        usage=f""
+        usage=
+        f"""pstealth --genome (-g) <genome infile> --plasmid (-p) <plasmid infile> --outfile -o [outfile | default: stdout] -[optional args -> -zPMmrs]
+            Optional Args:
+                --zScore (-z) -> [zscore cutoff value | default: -4]
+                --pseudo (-P) [pseudo-count value | default: 0]
+                --max (-M) [maximum motif size | default: 8]
+                --min (-m) [minimum motif size | default: 1]
+                --palindrome (-r) [Remove RC palindromes only | default: off]
+                --silent (-s) [Hide report message | default: show]"""
     )
     parser.add_argument(
         "--genome", "-g", type=str, action="store", help="input genome file in GenBank or FastA format", required= True
@@ -155,7 +163,7 @@ def main():
     )
     parser.add_argument("--max", '-M', default = 8, choices= range(2,10), help="Set maximum motif size, default = 8")
     parser.add_argument("--min",'-m',default = 1, choices = range(1,9), help = "Set minimum motif size, default = 1")
-    parser.add_argument("--palindrome",'-r', default = False, action= "store_true", help= "Hide only RC palindromes")
+    parser.add_argument("--palindrome",'-r', default = False, action= "store_true", help= "Hide only RC palindromes, default = remove all motifs")
     parser.add_argument("--silent", "-s", default= False, action= "store_true", help= "Disable final modification report, default = show")
     
     args = parser.parse_args()
