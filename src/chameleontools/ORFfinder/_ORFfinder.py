@@ -28,11 +28,14 @@ class ORFfinder:
         starts: set = {"ATG"},
         stops: set = {"TAA", "TAG", "TGA"},
     ):
-        """
-        Usage:
-        gene_finder = ORFfinder(seq,**kwargs)
+        """_summary_
 
-        gene_candidates = gene_finder.get_genes()
+        Args:
+            seq (str): _description_
+            longestGene (bool, optional): _description_. Defaults to False.
+            minGene (int, optional): _description_. Defaults to 100.
+            starts (set, optional): _description_. Defaults to {"ATG"}.
+            stops (set, optional): _description_. Defaults to {"TAA", "TAG", "TGA"}.
         """
         assert minGene >= 0
         self.geneCandidates = []
@@ -48,7 +51,7 @@ class ORFfinder:
         self.minGene = minGene
         self.longestGene = longestGene
 
-        self._geneFinder()
+        self._analysis()
 
     def _geneFinder(self, seq, rev, longGene):
         """
@@ -90,7 +93,7 @@ class ORFfinder:
             if longGene:  # LongestGene flag
                 return
 
-    def _geneFinder(self):
+    def _analysis(self):
         """
         Main geneFinder function. Runs hidden _geneFinder() function to parse through both top/bottom strand
         """
@@ -104,9 +107,8 @@ class ORFfinder:
                 self.geneCandidates, key=lambda entry: entry[2], reverse=True
             )
         ]
-        return self.formatted
 
-    def get_genes(self):
+    def get_genes(self) -> list[tuple[int,int,int,int]]:
         return self.geneCandidates
 
-__all__ = [ORFfinder]
+__all__ = ["ORFfinder"]
