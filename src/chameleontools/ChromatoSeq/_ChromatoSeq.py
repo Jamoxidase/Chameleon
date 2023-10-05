@@ -1,32 +1,4 @@
-import argparse
-import random
 from Bio.Seq import Seq
-
-
-class codonOptimizer:
-    """
-    This is a basic codonOptimizer that takes codon useage data and a sequence
-    of aminoAcids as input and recapitulates the overall frequency of the
-    given input in the reverse-transcription of the AA seq. This should
-    roughly fit to levels of tRNA availibility.
-    """
-
-    def __init__(self, synonomous, frequencies):
-        self.synFreqDic = {}
-        for aa, codons in synonomous.items():
-            codFreqList = [(codon, frequencies[codon]) for codon in codons]
-            self.synFreqDic[aa] = codFreqList
-
-    def weightedChoice(self, aa):
-        codons, frequencies = zip(*self.synFreqDic[aa])
-        chosenCodon = random.choices(codons, weights=frequencies, k=1)
-        return chosenCodon[0]
-
-    def assembleSeed(self, aaSequence):
-        dnaList = [self.weightedChoice(aa) for aa in aaSequence]
-        dnaSeed = "".join(dnaList)
-        return dnaSeed
-
 
 class patternConstrainer:
     """
@@ -42,9 +14,31 @@ class patternConstrainer:
     edge case handling:
     """
 
-    def __init__(self, motifs, codonOptions, codonPref):
+    def __init__(self, motifs, codonPref):
         self.motifs = motifs  # A list of motifs to avoid, likely to trigger RMS
-        self.codonOptions = codonOptions  # The dictionary of codons mapping to their corresponding amino acids.
+        self.codonOptions = { # The dictionary of codons mapping to their corresponding amino acids.
+            "F": ["TTT", "TTC"],
+            "L": ["TTA", "TTG", "CTT", "CTC", "CTA", "CTG"],
+            "S": ["TCT", "TCC", "TCA", "TCG", "AGT", "AGC"],
+            "Y": ["TAT", "TAC"],
+            "C": ["TGT", "TGC"],
+            "W": ["TGG"],
+            "P": ["CCT", "CCC", "CCA", "CCG"],
+            "H": ["CAT", "CAC"],
+            "Q": ["CAA", "CAG"],
+            "R": ["CGT", "CGC", "CGA", "CGG", "AGA", "AGG"],
+            "I": ["ATT", "ATC", "ATA"],
+            "M": ["ATG"],
+            "T": ["ACT", "ACC", "ACA", "ACG"],
+            "N": ["AAT", "AAC"],
+            "K": ["AAA", "AAG"],
+            "V": ["GTT", "GTC", "GTA", "GTG"],
+            "A": ["GCT", "GCC", "GCA", "GCG"],
+            "D": ["GAT", "GAC"],
+            "E": ["GAA", "GAG"],
+            "G": ["GGT", "GGC", "GGA", "GGG"],
+            "*": ["TAA", "TAG", "TGA"],
+        } 
         self.codonPref = codonPref
 
     def motifInSeq(self, sequence):
@@ -82,7 +76,7 @@ class patternConstrainer:
         ]  # change to handle begainning case (no -6 index)
         tailAdapt = sequence[tailStart:tailEnd]
 
-        myPermuter = Permutations(self.motifs, self.codonOptions, self.codonPref)
+        myPermuter = Permutations(self.motifs, self.codonPref)
         cleanedRegion = myPermuter.rank(
             workingDnaSequence, workingAaSeq, headAdapt, tailAdapt
         )
@@ -96,7 +90,7 @@ class patternConstrainer:
 
         return newSequence
 
-    def optimizeSequence(self, sequence):
+    def optimizeSequence(self, sequence) -> str:
         """
         understand behaviour
         """
@@ -107,7 +101,6 @@ class patternConstrainer:
                 optimizedSequence = newSequence
         return optimizedSequence
 
-
 class Permutations:
     """
     Generates all possible codon permutations of given window (codon subsequence
@@ -116,14 +109,39 @@ class Permutations:
     added to net list as a tuple. These tuples are then sorted via score descrimination-
     only canditates with the best score for first item contenue, same with second item
     and then the 3rd item varies. This can be adjusted but allows for the prioritization
-    of sorting methodologies for each specific score items.
+    of sorting methodologies for each specific score items. 
     prior implementations had score bleeding issues, this is currently an open end
     """
-
-    def __init__(self, motifs, codonOptions, frequencies):
+    
+    def __init__(self, motifs, frequencies):
         self.Motifs = motifs
-        self.frequencies = frequencies
-        self.codonOptions = codonOptions
+        self.frequencies = {}
+        for _,codon_dict in frequencies.items():
+            self.frequencies.update(codon_dict)
+        self.codonOptions = { # The dictionary of codons mapping to their corresponding amino acids.
+            "F": ["TTT", "TTC"],
+            "L": ["TTA", "TTG", "CTT", "CTC", "CTA", "CTG"],
+            "S": ["TCT", "TCC", "TCA", "TCG", "AGT", "AGC"],
+            "Y": ["TAT", "TAC"],
+            "C": ["TGT", "TGC"],
+            "W": ["TGG"],
+            "P": ["CCT", "CCC", "CCA", "CCG"],
+            "H": ["CAT", "CAC"],
+            "Q": ["CAA", "CAG"],
+            "R": ["CGT", "CGC", "CGA", "CGG", "AGA", "AGG"],
+            "I": ["ATT", "ATC", "ATA"],
+            "M": ["ATG"],
+            "T": ["ACT", "ACC", "ACA", "ACG"],
+            "N": ["AAT", "AAC"],
+            "K": ["AAA", "AAG"],
+            "V": ["GTT", "GTC", "GTA", "GTG"],
+            "A": ["GCT", "GCC", "GCA", "GCG"],
+            "D": ["GAT", "GAC"],
+            "E": ["GAA", "GAG"],
+            "G": ["GGT", "GGC", "GGA", "GGG"],
+            "*": ["TAA", "TAG", "TGA"],
+        }
+        
 
     def permute(self, amino_acid_sequence, current_codons=""):
         if not amino_acid_sequence:
@@ -141,19 +159,15 @@ class Permutations:
         ranks = []
         permutation_generator = self.permute(aaSeq)
 
-        while True:
-            try:
-                putative = next(permutation_generator)
-                permutation = headAdapt + putative + tailAdapt
+        for putative in permutation_generator:
+            permutation = headAdapt + putative + tailAdapt
 
-                severity, codScore = self.analyze_dna_motifs(permutation)
-                adherance = self.gaugeAdherance(
-                    dnaSeq, putative
-                )  # returns a value between 0 and 1, 0 being less adherant
+            severity, codScore = self.analyze_dna_motifs(permutation)
+            adherance = self.gaugeAdherance(
+                dnaSeq, putative
+            )  # returns a value between 0 and 1, 0 being less adherant
 
-                ranks.append((severity, adherance, codScore, permutation))
-            except StopIteration:
-                break  # Stop when all permutations have been generated
+            ranks.append((severity, adherance, codScore, permutation))
 
         min_first_item = min(ranks, key=lambda x: x[0])[0]
         filter1 = sorted(
@@ -239,7 +253,6 @@ class Permutations:
                 adherance += 1 / codLen
         return adherance  # confers percentage of conserved codons in perm
 
-
 class MotifChecker:
     """
     helper class, used to fetch final stats in main
@@ -264,85 +277,4 @@ class MotifChecker:
 
         return totalOccurrences
 
-
-def main():
-    # codonOptions is a constant
-    codonOptions = {
-        "F": ["TTT", "TTC"],
-        "L": ["TTA", "TTG", "CTT", "CTC", "CTA", "CTG"],
-        "S": ["TCT", "TCC", "TCA", "TCG", "AGT", "AGC"],
-        "Y": ["TAT", "TAC"],
-        "C": ["TGT", "TGC"],
-        "W": ["TGG"],
-        "P": ["CCT", "CCC", "CCA", "CCG"],
-        "H": ["CAT", "CAC"],
-        "Q": ["CAA", "CAG"],
-        "R": ["CGT", "CGC", "CGA", "CGG", "AGA", "AGG"],
-        "I": ["ATT", "ATC", "ATA"],
-        "M": ["ATG"],
-        "T": ["ACT", "ACC", "ACA", "ACG"],
-        "N": ["AAT", "AAC"],
-        "K": ["AAA", "AAG"],
-        "V": ["GTT", "GTC", "GTA", "GTG"],
-        "A": ["GCT", "GCC", "GCA", "GCG"],
-        "D": ["GAT", "GAC"],
-        "E": ["GAA", "GAG"],
-        "G": ["GGT", "GGC", "GGA", "GGG"],
-        "*": ["TAA", "TAG", "TGA"],
-    }
-
-    # Create a parser with appropriate descriptions for the arguments
-    parser = argparse.ArgumentParser(description="DNA Processing")
-    parser.add_argument("amino_sequence", help="Amino sequence as a string")
-    parser.add_argument("frequencies", help="Frequencies as a dictionary string")
-    parser.add_argument("motifs", help="Motifs as a list string")
-
-    args = parser.parse_args()
-
-    # Parse the input arguments
-    aaSequence = args.amino_sequence
-
-    # Convert the input strings to Python dictionaries and lists
-    frequencies = eval(args.frequencies)  # Use eval to convert to a dictionary
-    motifs = eval(args.motifs)  # Use eval to convert to a list
-
-    """
-    frequencies = {'TAA': 0.526, 'TAG': 0.264, 'TGA': 0.21, 'GCA': 0.182, 'GCC': 0.316, 
-                    'GCG': 0.168, 'GCT': 0.334, 'TGC': 0.259, 'TGT': 0.741, 'GAC': 0.233,
-                    'GAT': 0.767, 'GAA': 0.741, 'GAG': 0.259, 'TTC': 0.242, 'TTT': 0.758,
-                    'GGA': 0.292, 'GGC': 0.184, 'GGG': 0.182, 'GGT': 0.343, 'CAC': 0.351,
-                    'CAT': 0.649, 'ATA': 0.128, 'ATC': 0.324, 'ATT': 0.548, 'AAA': 0.791,
-                    'AAG': 0.209, 'CTA': 0.126, 'CTC': 0.129, 'CTG': 0.117, 'CTT': 0.099,
-                    'TTA': 0.389, 'TTG': 0.14, 'ATG': 1.0, 'AAC': 0.277, 'AAT': 0.723,
-                    'CCA': 0.162, 'CCC': 0.411, 'CCG': 0.172, 'CCT': 0.256, 'CAA': 0.695,
-                    'CAG': 0.305, 'AGA': 0.19, 'AGG': 0.067, 'CGA': 0.153, 'CGC': 0.218, 
-                    'CGG': 0.139, 'CGT': 0.234, 'AGC': 0.142, 'AGT': 0.266, 'TCA': 0.107,
-                    'TCC': 0.173, 'TCG': 0.103, 'TCT': 0.211, 'ACA': 0.18, 'ACC': 0.36, 
-                    'ACG': 0.139, 'ACT': 0.32, 'GTA': 0.181, 'GTC': 0.227, 'GTG': 0.264, 
-                    'GTT': 0.328, 'TGG': 1.0, 'TAC': 0.283, 'TAT': 0.717}
-    motifs = ['CACCTGC', 'GTGGACG', 'CCGG', 'CGCG', 'GGCC', 'TGCA', 'CCAGG', 'CCTGG', 'GGACC', 'GGCCC', 'GGGCC', 'GGTCC', 'TCTGA', 'AAATTT', 'AATATT', 'ACATGT', 'ACGCGT', 'ACTAGT', 'AGCGCT', 'AGTACT', 'ATCGAT', 'ATGCAT', 'CAATTG', 'CAGCTG', 'CATATG', 'CCGCGG', 'CCTAGG', 'CGCGCG', 'CGTACG', 'CTCGAG', 'CTGCAG', 'GAATTC', 'GACGTC', 'GAGCTC', 'GATATC', 'GCATGC', 'GCGCGC', 'GCTAGC', 'GGCGCC', 'GGTACC', 'GTATAC', 'GTCGAC', 'GTGCAC', 'TAATTA', 'TACGTA', 'TCCGGA', 'TGCGCA', 'TGTACA', 'TTCGAA', 'TTTAAA', 'GGCC', 'ACTAGT', 'AGTACT', 'ATCGAT', 'ATGCAT', 'CTCGAG', 'CTGCAG', 'GAATTC', 'GCTAGC', 'GGTACC', 'GTCGAC', 'TAATTA', 'TGCGCA', 'TTCGAA', 'CCTCAGG', 'CCTGAGG', 'GCTAAGC', 'GCTTAGC', 'GGTAACC', 'GGTCACC', 'GGTGACC', 'GGTTACC', 'AAAATTTT', 'AAACGTTT', 'AAAGCTTT', 'AAATATTT', 'AACATGTT', 'AACCGGTT', 'AACGCGTT', 'AACTAGTT', 'AATATATT', 'AATCGATT', 'AATGCATT', 'AATTAATT', 'AGATATCT', 'AGTTAACT', 'ATAATTAT', 'ATTATAAT', 'CAGATCTG', 'CAGTACTG', 'CATATATG', 'CATTAATG', 'CCAATTGG', 'CCACGTGG', 'CCAGCTGG', 'CCCATGGG', 'CCCCGGGG', 'CCCGCGGG', 'CGAGCTCG', 'CGATATCG', 'CGCGCGCG', 'CGCTAGCG', 'CTAATTAG', 'CTAGCTAG', 'CTATATAG', 'CTGATCAG', 'CTGGCCAG', 'CTGTACAG', 'CTTATAAG', 'CTTGCAAG', 'CTTTAAAG', 'GAGATCTC', 'GAGTACTC', 'GATATATC', 'GATTAATC', 'GTGATCAC', 'GTTATAAC', 'TACCGGTA', 'TACTAGTA', 'TATCGATA', 'TATTAATA', 'TGATATCA', 'TGTTAACA']
-    aaSequence = 'MVSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTLTYGVQCFSRYPDHMKQHDFFKSAMPEGYVQERTIFFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYIMADKQKNGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITLGMDELYK'
-    """
-
-    seedDNA = codonOptimizer(codonOptions, frequencies)
-    avoidPatterns = patternConstrainer(motifs, codonOptions, frequencies)
-    evalMortality = MotifChecker(motifs)
-
-    roundsData = []
-    i = 0
-    while i < 5:
-        seed = seedDNA.assembleSeed(aaSequence)
-        optimization = avoidPatterns.optimizeSequence(seed)
-
-        mortality = evalMortality.checkMotifs(optimization)
-        roundsData.append((mortality, optimization))
-        i += 1
-    lowestMortality = min(roundsData, key=lambda x: x[0])
-    best = lowestMortality[0]
-    bestSeq = lowestMortality[1]
-
-    print(best, "MOTIFS REMAIN: \n", bestSeq)
-
-
-if __name__ == "__main__":
-    main()
+__all__ = ["patternConstrainer","Permutations","MotifChecker"]
