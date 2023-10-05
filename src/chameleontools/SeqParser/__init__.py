@@ -1,9 +1,9 @@
 """
 TABI - UCSC iGEM 2023
 
-StealthGenome: Prep Genome for Stealth and Codon Frequency analysis
+Module: SeqParser
 
-PlasmidParser: Identifies Stealth-mutable regions of an annotated plasmid
+Description: Classes to process input genome or plasmid files for futher Stealth optimizations
 
 Author: Tyler Gaw
 """
