@@ -364,10 +364,10 @@ class PlasmidParse:
         )  # self.record -> Bio.SeqRecord of plasmid
 
         self.mutable_regions = temp[0]
-        self.total_mutable = temp[1]
+        self.total_coverage = temp[1]
         self.removed = temp[2]
 
-        self.total_coverage = self.total_mutable + self.removed
+        self.total_mutable = self.total_coverage - self.removed
 
     def defineMutable(
         self, location: tuple[list[SimpleLocation]]
