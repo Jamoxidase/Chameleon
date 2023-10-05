@@ -133,9 +133,12 @@ class pipeline:
         removed_motifs = total_motifs - remaining_motifs
 
         plasmid_name = self.plasmid_input.getGenBank().name
+        
+        total_cds = self.plasmid_input.regionCount()
+        mutable = self.plasmid_input.mutableCount()
 
         print(
-            f"Removed {removed_motifs} of {total_motifs} motifs from {plasmid_name}. {remaining_motifs} motifs remain.",
+            f"""{plasmid_name}: {mutable} NT were mutable from {total_cds} NT of CDS coverge\nRemoved {removed_motifs} of {total_motifs} motifs from {plasmid_name}. {remaining_motifs} motifs remain.""",
             file=sys.stderr,
         )
 
@@ -198,6 +201,7 @@ def main():
     parser.add_argument(
         "--max",
         "-M",
+        type= int,
         default=8,
         choices=range(2, 10),
         help="Set maximum motif size, default = 8",
@@ -205,6 +209,7 @@ def main():
     parser.add_argument(
         "--min",
         "-m",
+        type=int,
         default=1,
         choices=range(1, 9),
         help="Set minimum motif size, default = 1",
