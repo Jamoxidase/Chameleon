@@ -1,14 +1,3 @@
-"""
-TABI - UCSC iGEM 2023
-
-StealthGenome: Prep Genome for Stealth and Codon Frequency analysis
-
-PlasmidParser: Identifies Stealth-mutable regions of an annotated plasmid
-
-Author: Tyler Gaw
-"""
-# Usage to be written, don't wanna rn
-
 from Bio import SeqIO
 from Bio.SeqFeature import SimpleLocation
 from Bio.Seq import Seq
@@ -27,7 +16,14 @@ class StealthGenome:
     """
 
     def _validArg(self, genome: str):
-        "helper func: checks valid args"
+        """"Helper method, checks valid args"
+
+        Args:
+            genome (str): input file name
+
+        Returns:
+            bool: valid input
+        """
         g_valid = False, False, False
         g_valid = (
             genome.endswith(".fasta")
@@ -37,6 +33,14 @@ class StealthGenome:
         return g_valid
 
     def _fastaGenome(self, fasta: str):
+        """Helper method, handles reading in of FastA files
+
+        Args:
+            fasta (str): FastA filename
+
+        Returns:
+            tuple[list[Bio.SeqRecord.SeqRecord],Bio.Seq.Seq]: List of CDS regions and genome sequence
+        """
         reader = FastAreader(fasta)
         CDS_records = []
         sequence = []
@@ -63,22 +67,19 @@ class StealthGenome:
     # ^^^ Private Helper Functions ^^^
     ############################################################################################
 
-    def __init__(self, genome_infile) -> None:
-        """
-        Constructor: Validates inputs, writes to files in FASTA format, saves file names
-
-        Can be used for Stealth_CDS_Extract to produce a CDS generator for input file
+    def __init__(self, genome_infile: str) -> None:
+        """Validates inputs and stores genome sequence and CDS regions
 
         Args:
-        genome_infile (str): genome file in genbank or FastA format
+            genome_infile (str): genome file in GenBank or FastA format
+            
+        Usage:
 
-        Class Attr.:
+            self.getGenome() -> array of Seq()
 
-        self.getGenome() -> array of Seq()
+            self.getCDS() -> Iterator of Biopython SeqRecord for each CDS | list of SeqRecord if using FastA file
 
-        self.getCDS() -> Iterator of Biopython SeqRecord for each CDS | list of SeqRecord if using FastA file
-
-        self.filetype() -> type of input file | "fasta" if FastA file, "genbank" if GenBank file
+            self.filetype() -> type of input file | "fasta" if FastA file, "genbank" if GenBank file
         """
         if genome_infile != None:
             g_bool = self._validArg(genome_infile)
@@ -101,12 +102,10 @@ class StealthGenome:
                 self.input = "genbank"
 
     def Stealth_CDS_Extract(self, gbfile: str) -> Iterator[SeqRecord]:
-        """
-        Reads a genbank file and yields CDS/ORF features for Codon Optimization
-
-        A generator that yields CDS features in FASTA format
-
-        Used to produce data for codon usage statistics
+        """Generator for CDSs in a GenBank file
+        
+        Args:
+            gbfile (str): input GenBank file
         """
         gb = SeqIO.parse(gbfile, "genbank")
         count = 0
@@ -130,30 +129,60 @@ class StealthGenome:
             return  # Only accepts single entry genbank records
 
     def filetype(self) -> Literal["fasta", "genbank"]:
+        """Returns filetype of input file
+
+        Returns:
+            Literal[str]: "fasta" or "genbank"
+        """
         return self.input
 
     def getGenome(self) -> list[Seq]:
+        """Returns genome sequence(s)
+
+        Returns:
+            list[Seq]: Sequence(s) of genome stored in a list
+        """
         return self.genome_sequence
 
     def getCDS(self) -> Iterator[SeqRecord] | list[SeqRecord]:
+        """Returns iterable of CDS regions
+
+        Returns:
+            list[SeqRecord]: list of CDSs
+
+        Yields:
+            Iterator[SeqRecord]: Iterable of CDSs
+        """
         return self.cds_sequence
 
 
 class PlasmidParse:
-    """
-    Reads in an annotated plasmid file in genbank format,
+    """Reads in an annotated plasmid file in genbank format,
     parses mutable regions from CDS/ORF annotations,
     takes statistics for total mutable range
     """
 
     def _validArg(self, plasmid_infile: str) -> bool:
-        "helper func: checks for valid input"
+        """Helper method, checks for valid input
+        
+        Args:
+            plasmid_infile (str): filename for input file
+            
+        Returns:
+            bool: boolean of valid filename """
         return plasmid_infile.endswith(".gb") or plasmid_infile.endswith(".gbk")
 
     def _parsePlasmid(
         self, gbfile: str
     ) -> tuple[list[SimpleLocation], list[SimpleLocation]]:
-        "helper func: Filters for CDS and noncoding sequence"
+        """Helper func, filters for CDS and noncoding sequence
+
+        Args:
+            gbfile (str): input plasmid sequence
+
+        Returns:
+            tuple[list[SimpleLocation], list[SimpleLocation]]: regions to avoid and CDS regions
+        """
         avoid, cds = [], []
         gb = SeqIO.parse(gbfile, "genbank")
         for rec in gb:
@@ -171,7 +200,15 @@ class PlasmidParse:
     def _trimStart(
         self, loc_list: list[SimpleLocation], cds: SimpleLocation
     ) -> list[SimpleLocation]:
-        "helper func: trims the start codon of CDS, handles fwd/rev strands"
+        """Helper method, trims the start codon of CDS from others that overlap, handles fwd/rev strands
+
+        Args:
+            loc_list (list[SimpleLocation]): list of SimpleLocation objects to subtract from
+            cds (SimpleLocation): CDS to subtract
+
+        Returns:
+            list[SimpleLocation]: list of trimmed SimpleLocation objects
+        """
         ref = (
             SimpleLocation(cds.start, cds.start + 3, cds.strand)
             if cds.strand > 0
@@ -191,8 +228,16 @@ class PlasmidParse:
                 break
         return
 
-    def _frameAdj(self, loc_list: list[SimpleLocation], frame: int) -> SimpleLocation:
-        "helper func: trims mutable regions to lie in frame"
+    def _frameAdj(self, loc_list: list[SimpleLocation], frame: int) -> list[SimpleLocation]:
+        """Helper func, trims mutable regions to lie in frame
+
+        Args:
+            loc_list (list[SimpleLocation]): List of SimpleLocations to frame adjust
+            frame (int): Frame to adjust to
+
+        Returns:
+            List[SimpleLocation]: List of frame-adjusted SimpleLocations
+        """
         new = []
         for loc in loc_list:
             st = loc.start
@@ -211,7 +256,15 @@ class PlasmidParse:
     def _removeOverlap(
         self, loc_list: list[SimpleLocation], cds: SimpleLocation
     ) -> list[SimpleLocation]:
-        "helper func: removes overlapping cds regions"
+        """Helper method, removes overlapping cds regions
+
+        Args:
+            loc_list (list[SimpleLocation]): List of locations to subtract from
+            cds (SimpleLocation): CDS to subtract 
+
+        Returns:
+            list[SimpleLocation]: List of non-overlapping regions of CDS
+        """
         ret = []
         for loc in loc_list:
             new = [[loc.start, loc.end]]
@@ -238,7 +291,16 @@ class PlasmidParse:
         st_bound: int,
         ed_bound: int,
     ) -> list[list[SimpleLocation], int, SimpleLocation]:
-        "helper func: corrects for out-frame overlapping CDS"
+        """Helper method, corrects for out-frame overlapping CDS
+
+        Args:
+            old (list[list[SimpleLocation], int, SimpleLocation]): list of current mutable regions
+            st_bound (int): beginning of overlapping CDS
+            ed_bound (int): end of overlapping CDS
+
+        Returns:
+            list[list[SimpleLocation], int, SimpleLocation]: New list of mutable regions
+        """
         loc, fm, parent = old
         new = SimpleLocation(st_bound, ed_bound, parent.strand)
         dummy = []
@@ -262,25 +324,25 @@ class PlasmidParse:
     ############################################################################################
 
     def __init__(self, plasmid_infile: str) -> None:
-        """
-        Constructor: Validates inputs, parses mutable regions
+        """Validates inputs, parses out mutable regions
 
         Args:
-        plasmid_infiled (str): genome file in FASTA or genbank format
+            plasmid_infiled (str): plasmid file in FASTA or genbank format
 
-        Class Methods:
+        Usage:
+            self.getGenBank() -> Biopython SeqRecord() of input plasmid, contains feature annotations
 
-        self.getGenBank() -> Biopython SeqRecord() of input plasmid, contains feature annotations
+            self.getSeq() -> Biopython Seq() of input Plasmid
 
-        self.getSeq() -> Biopython Seq() of input Plasmid
+            self.regions() -> array of Biopython SimpleLocation() ranges of mutable codons
 
-        self.regions() -> array of Biopython SimpleLocation() ranges of mutable codons
+            self.mutableCount() -> final mutable regions on plasmid
 
-        self.mutableCount() -> final mutable regions on plasmid
+            self.unmutableCount() -> number of removed basepairs from total CDS coverage
 
-        self.unmutableCount() -> number of removed basepairs from total CDS coverage
+            self.regionCount() -> Total CDS coverage before extracting mutable regions
 
-        self.regionCount() -> Total CDS coverage before extracting mutable regions
+        
         """
         p_bool = self._validArg(plasmid_infile)
         if not p_bool:
@@ -309,7 +371,12 @@ class PlasmidParse:
 
     def defineMutable(
         self, location: tuple[list[SimpleLocation]]
-    ) -> list[SimpleLocation]:
+    ) -> tuple[list[SimpleLocation],int,int]:
+        """
+        Parses out all mutable regions based on plasmid annotations
+        """
+        
+        
         "Finds non-overlapped mutable regions in an annotated plasmid"
 
         avoid, cdsRegions = location
@@ -417,21 +484,51 @@ class PlasmidParse:
         return mutable_regions, total_coverage, removed
 
     def getSeq(self) -> Seq:
+        """Get the sequence of the plasmid
+
+        Returns:
+            Seq: Plasmid NT sequence
+        """
         return self.plasmid_sequence
 
-    def regions(self) -> list[SeqRecord]:
+    def regions(self) -> list[SimpleLocation]:
+        """Get the list of mutable regions
+
+        Returns:
+            list[SimpleLocation]: SimpleLocations defining mutable regions
+        """
         return self.mutable_regions
 
     def mutableCount(self) -> int:
+        """Get length of mutable regions
+
+        Returns:
+            int: NT count of mutable regions
+        """
         return self.total_mutable
 
     def regionCount(self) -> int:
+        """Get total length of CDS regions
+
+        Returns:
+            int: NT count of CDS regions
+        """
         return self.total_coverage
 
     def unmutableCount(self) -> int:
+        """Get length of unremoved regions
+
+        Returns:
+            int: NT count of unmutable CDS regions
+        """
         return self.removed
 
     def getGenBank(self) -> SeqRecord:
+        """Get GenBank record of plasmid infile
+
+        Returns:
+            SeqRecord: SeqRecord of input plasmid
+        """
         return self.record
 
 
