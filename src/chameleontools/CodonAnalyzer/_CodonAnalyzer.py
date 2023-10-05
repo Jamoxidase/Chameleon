@@ -153,7 +153,7 @@ class CDSanalyzer:
         """
         input = input.cds_sequence if type(input) == SeqParser.StealthGenome else input
         for cds in input:
-            cds = cds.seq
+            cds = str(cds.seq)
             for i in range(0, len(cds), 3):
                 codon = cds[i : i + 3]
                 codon_to_aa = self.dnaCodonTable[codon]
