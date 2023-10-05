@@ -1,24 +1,6 @@
-"""
-TABI - UCSC iGEM 2023
-Modified from ORFfinder Class written for Winter 2022 BME160
-BME160 Professor: David L. Bernick
-"""
-
-# ORF finder used to parse FastA format genome files.
-# Optional parameters:
-#     longestGene -> only reports longest genes in an ORF
-#     minGene -> only reports genes of this size or larger
-#     starts -> define set of valid start codons
-#     stop -> define set fo valid stop codons
-
 
 class ORFfinder:
-    """
-    ORF finder class that scans through a genome and reports ORFs from all frames
-
-    Data is reported in a list of lists in
-
-    format: list[[startPos,stopPos,length,frame]]
+    """ORF finder class that scans through a genome and reports ORFs from all frames
     """
 
     def __init__(
@@ -29,14 +11,14 @@ class ORFfinder:
         starts: set = {"ATG"},
         stops: set = {"TAA", "TAG", "TGA"},
     ):
-        """_summary_
+        """Finds all potential ORFs in a given sequence
 
         Args:
-            seq (str): _description_
-            longestGene (bool, optional): _description_. Defaults to False.
-            minGene (int, optional): _description_. Defaults to 100.
-            starts (set, optional): _description_. Defaults to {"ATG"}.
-            stops (set, optional): _description_. Defaults to {"TAA", "TAG", "TGA"}.
+            seq (str): genomic sequence
+            longestGene (bool, optional): Toggles finding largest gene per ORF. Defaults to False.
+            minGene (int, optional): Gene length report cutoff. Defaults to 100.
+            starts (set, optional): Define start codons. Defaults to {"ATG"}.
+            stops (set, optional): Define stop codons. Defaults to {"TAA", "TAG", "TGA"}.
         """
         assert minGene >= 0
         self.geneCandidates = []
@@ -55,8 +37,7 @@ class ORFfinder:
         self._analysis()
 
     def _geneFinder(self, seq, rev, longGene):
-        """
-        Helper function that collects starts and identifies stops
+        """Helper function, collects starts and identifies stops
         """
         start = set()
         for frame in range(0, 3):
@@ -77,9 +58,7 @@ class ORFfinder:
                 self._addGene(start, len(seq) - 3, _frame, longGene)
 
     def _addGene(self, start, i, frame, longGene):
-        """
-        Helper Function
-        Does all gene-candidate calculations using [start] [stop index] [frame #] [longest gene flag]
+        """Helper Function, does all gene-candidate calculations 
         """
         for s in sorted(start):
             length = i - s + 3
@@ -95,8 +74,7 @@ class ORFfinder:
                 return
 
     def _analysis(self):
-        """
-        Main geneFinder function. Runs hidden _geneFinder() function to parse through both top/bottom strand
+        """Runs ORF finder on input sequence
         """
         self._geneFinder(self.fiveThree, False, self.longestGene)
         self._geneFinder(self.threeFive, True, self.longestGene)
@@ -110,6 +88,11 @@ class ORFfinder:
         ]
 
     def get_genes(self) -> list[tuple[int, int, int, int]]:
+        """Fetches all gene candidates
+        
+        Returns:
+            list[tuple[int, int, int, int]]: List of gene candidates
+        """
         return self.geneCandidates
 
 
