@@ -80,12 +80,12 @@ class ORFfinder:
         self._geneFinder(self.threeFive, True, self.longestGene)
 
         # sorts geneCandidates list, sorting by gene length
-        self.formatted = [
+        self.geneCandidates = [
             x
             for x in sorted(
                 self.geneCandidates, key=lambda entry: entry[2], reverse=True
             )
-        ]
+            if x[2] % 3 == 0 ]
 
     def get_genes(self) -> list[tuple[int, int, int, int]]:
         """Fetches all gene candidates
