@@ -455,7 +455,7 @@ class PlasmidParse:
                 if parent_cds == None:
                     continue
                 if parent_cds.start in region or parent_cds.end in region:
-                    if parent_frame != frm:
+                    if parent_frame != frm or parent_cds.strand != region.strand:
                         temp[i][0] = self._removeOverlap(frag, parent_cds)
                         frag = temp[i][0]
                 if parent_cds.start in region and parent_cds.end in region:
