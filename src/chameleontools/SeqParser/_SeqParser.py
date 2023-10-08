@@ -77,7 +77,7 @@ class StealthGenome:
 
             self.getGenome() -> array of Seq()
 
-            self.getCDS() -> Iterator of Biopython SeqRecord for each CDS | list of SeqRecord if using FastA file
+            self.getCDS() -> List of SeqRecord
 
             self.filetype() -> type of input file | "fasta" if FastA file, "genbank" if GenBank file
         """
@@ -97,36 +97,36 @@ class StealthGenome:
                 )
                 self.input = "fasta"
             else:
-                self.cds_sequence = self.Stealth_CDS_Extract(genome_infile)
-                self.genome_sequence = self.genome_sequence
+                self.cds_sequence,self.genome_sequence = self._Stealth_CDS_Extract(genome_infile)
                 self.input = "genbank"
 
-    def Stealth_CDS_Extract(self, gbfile: str) -> Iterator[SeqRecord]:
+    def _Stealth_CDS_Extract(self, gbfile: str) -> tuple[list[Seq],Iterator[SeqRecord]]:
         """Generator for CDSs in a GenBank file
         
         Args:
             gbfile (str): input GenBank file
         """
-        gb = SeqIO.parse(gbfile, "genbank")
-        count = 0
+        gb = SeqIO.parse(gbfile, "genbank") 
         for rec in gb:
-            self.genome_sequence = [
+            genome_sequence = [
                 rec.seq
             ]  # define self.genome_sequence from genbank record
-            for feature in rec.features:
-                if feature.type == "CDS" or feature.type == "ORF":
-                    count += 1
-                    out = feature.extract(rec)
+            def _generator() -> Iterator[SeqRecord]:
+                count = 0
+                for feature in rec.features:
+                    if feature.type == "CDS" or feature.type == "ORF":
+                        count += 1
+                        out = feature.extract(rec)
 
-                    """Set the description to 'product' qualifier if avaiable. Else use 'label' qualifier or [null] if labels are not present"""
-                    out.description = feature.qualifiers.get(
-                        "product", feature.qualifiers.get("label", ["null"])
-                    )[0]
+                        """Set the description to 'product' qualifier if avaiable. Else use 'label' qualifier or [null] if labels are not present"""
+                        out.description = feature.qualifiers.get(
+                            "product", feature.qualifiers.get("label", ["null"])
+                        )[0]
 
-                    out.name = "TEMP CDS HEADER"
-                    out.id = f"CDS_{count} CODON STATS"
-                    yield out
-            return  # Only accepts single entry genbank records
+                        out.name = "TEMP CDS HEADER"
+                        out.id = f"CDS_{count} CODON STATS"
+                        yield out
+            return  _generator(), genome_sequence  # Only accepts single entry genbank records
 
     def filetype(self) -> Literal["fasta", "genbank"]:
         """Returns filetype of input file
@@ -144,7 +144,7 @@ class StealthGenome:
         """
         return self.genome_sequence
 
-    def getCDS(self) -> Iterator[SeqRecord] | list[SeqRecord]:
+    def getCDS(self) -> list[SeqRecord]:
         """Returns iterable of CDS regions
 
         Returns:
