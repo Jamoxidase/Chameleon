@@ -88,6 +88,9 @@ class pipeline:
         self.loading_bar.set_description("Removing Motifs")
 
         modified_blocks = []  # list of SimpleLocations, mapped to modified Seq()
+        
+        loading_progress = 48 / (sum([len(x) for x in region])) # more dynamic loading bar for motif removal
+        
         for s_loc in region:
             coding_seq = s_loc.extract(plasmid_seq)
             self.total_motifs += motif_check.checkMotifs(coding_seq)
@@ -97,7 +100,7 @@ class pipeline:
                 stealth_seq = stealth_seq.reverse_complement()
             modified_blocks.append([s_loc, stealth_seq])
 
-            self.loading_bar.update((40 / len(region)))
+            self.loading_bar.update((loading_progress * len(s_loc)))
 
         return modified_blocks
 
@@ -115,7 +118,7 @@ class pipeline:
             new_seq += seq
             cut_start = s_loc.end
 
-            self.loading_bar.update((15 / len(blocks)))
+            self.loading_bar.update((7 / len(blocks)))
 
         new_seq += plasmid_sequence[cut_start:]
 
