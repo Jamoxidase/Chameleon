@@ -27,6 +27,7 @@ class StealthGenome:
         g_valid = False, False, False
         g_valid = (
             genome.endswith(".fasta")
+            or genome.endswith(".fa")
             or genome.endswith(".gb")
             or genome.endswith(".gbk")
         )
@@ -86,12 +87,12 @@ class StealthGenome:
 
             if not g_bool:
                 print(
-                    f"Genome File needs to be FASTA file (.fasta) or GenBank file (.gb || .gbk). Got {genome_infile}",
+                    f"Genome File needs to be FASTA file (.fasta || .fa) or GenBank file (.gb || .gbk). Got {genome_infile}",
                     file=sys.stderr,
                 )
                 exit()
 
-            if genome_infile.endswith(".fasta"):
+            if genome_infile.endswith(".fasta") or genome_infile.endswith(".fa"):
                 self.cds_sequence, self.genome_sequence = self._fastaGenome(
                     genome_infile
                 )
