@@ -162,83 +162,83 @@ def main():
                 --min (-m) [minimum motif size | default: 1]
                 --palindrome (-r) [Remove RC palindromes only | default: off]
                 --silent (-s) [Hide report message | default: show]
-                --keep (-k) [Adds annotations to consider in Mutable Regions | default = {'ORF','gene','CDS'}]
-                --ignore (-i) [Adds annotations to ignore when defining Mutable Regions | default = {'source'}]""",
+                --keep (-k) [Adds annotations to consider in Mutable Regions | default = ('ORF','gene','CDS')]
+                --ignore (-i) [Adds annotations to ignore when defining Mutable Regions | default = ('source')]""",
     )
     parser.add_argument(
-        "--genome",
         "-g",
+        "--genome",
         type=str,
         action="store",
         help="input genome file in GenBank or FastA format",
         required=True,
     )
     parser.add_argument(
-        "--outfile",
         "-o",
+        "--outfile",
         default=None,
         type=str,
         action="store",
         help="output filename, default = STDOUT",
     )
     parser.add_argument(
-        "--plasmid",
         "-p",
+        "--plasmid",
         type=str,
         action="store",
         help="input plasmid file in GenBank format",
         required=True,
     )
     parser.add_argument(
-        "--zScore",
         "-z",
+        "--zScore",
         type=float,
         default=-4,
         action="store",
         help="set Z-score cutoff for underrepresented motifs, default = -4",
     )
     parser.add_argument(
-        "--pseudo",
         "-P",
+        "--pseudo",
         type=int,
         default=0,
         action="store",
         help="set pseudo-count value, default = 0",
     )
     parser.add_argument(
-        "--max",
         "-M",
+        "--max",
         type= int,
         default=8,
         choices=range(2, 10),
         help="Set maximum motif size, default = 8",
     )
     parser.add_argument(
-        "--min",
         "-m",
+        "--min",
         type=int,
         default=1,
         choices=range(1, 9),
         help="Set minimum motif size, default = 1",
     )
     parser.add_argument(
-        "--palindrome",
         "-r",
+        "--palindrome",
         default=False,
         action="store_true",
-        help="Hide only RC palindromes, default = remove all motifs",
+        help="Hide only RC palindromes, default = off",
     )
     parser.add_argument(
-        "--silent",
         "-s",
+        "--silent",
         default=False,
         action="store_true",
         help="Disable final modification report, default = show",
     )
     
     parser.add_argument(
-        "--keep",
         "-k",
+        "--keep",
         type= str,
         default=None,
         action="store",
@@ -247,8 +247,8 @@ def main():
     )
     
     parser.add_argument(
-        "--ignore",
         "-i",
+        "--ignore",
         type= str,
         default=None,
         action="store",
