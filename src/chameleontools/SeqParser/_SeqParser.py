@@ -183,18 +183,26 @@ class PlasmidParse:
         Returns:
             tuple[list[SimpleLocation], list[SimpleLocation]]: regions to avoid and CDS regions
         """
-        avoid, cds = [], []
+        avoid, cds = set(),set() # sets to avoid duplicate annotation regions
         gb = SeqIO.parse(gbfile, "genbank")
         for rec in gb:
             self.record = rec
             for feature in rec.features:
-                if feature.type in {"source", "gene"}:
+                '''SimpleLocation unhashable, break down into data and recreate object'''
+                simpLoc = feature.location
+                simpLoc_data = (simpLoc.start,simpLoc.end,simpLoc.strand)
+                feat_data = (simpLoc_data, simpLoc.start % 3) # keeps location, frame
+                if feature.type in self.ignore_annotations:
                     continue
-                if feature.type in {"CDS", "ORF"}:
-                    cds.append((feature.location, feature.location.start % 3))
+                if feature.type in self.keep_annotations: 
+                    cds.add(feat_data)
                 else:
-                    avoid.append((feature.location, feature.location.start % 3))
+                    avoid.add(feat_data)
             break  # Only handles single entry genbank records
+        
+        '''recreate SimpleLocation objects'''
+        avoid = [(SimpleLocation(x[0],x[1],x[2]),y) for x,y in avoid]
+        cds = [(SimpleLocation(x[0],x[1],x[2]),y) for x,y in cds] 
         return avoid, cds
 
     def _trimStart(
@@ -323,7 +331,7 @@ class PlasmidParse:
     # Private Helper Functions
     ############################################################################################
 
-    def __init__(self, plasmid_infile: str) -> None:
+    def __init__(self, plasmid_infile: str, keep_annotation = [], ignore_annotation = []) -> None:
         """Validates inputs, parses out mutable regions
 
         Args:
@@ -352,6 +360,14 @@ class PlasmidParse:
             )
             exit()
 
+        self.keep_annotations = {"CDS","ORF","gene"}
+        self.ignore_annotations = {"source"}
+        
+        for annotation in keep_annotation:
+            self.keep_annotations.add(annotation)
+        for annotation in ignore_annotation:
+            self.ignore_annotations.add(annotation)
+        
         "Did this cause it was ugly when using tuple unpacking"
         temp_parse = self._parsePlasmid(plasmid_infile)
 
