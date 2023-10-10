@@ -10,8 +10,6 @@ class patternConstrainer:
     func.
     In this case, the outside func returns a 'more ideal' (synonomous variate)
     which patternConstrainer catches and overwrites into the working sequence.
-
-    edge case handling:
     """
 
     def __init__(self, motifs, codonPref):
@@ -43,16 +41,32 @@ class patternConstrainer:
 
     def motifInSeq(self, sequence):
         """
-        remove? if we use a motif checker that checks for a motif at each position, we can add variation to the shuffles actual footprint size
+        Given a sequence and initialized with a list of motifs, evaluates presence or absence of motifs in the sequence.
+        In practice this method is used to support the sliding window approach to pattern constraint requirements.
         """
-        # Iterate over each motif
         for motif in self.motifs:
-            # If the motif is found in the sequence
             if motif in sequence:
                 return True  # Return True immediately. This indicates that the sequence contains a motif that we want to avoid.
         return False  # If none of the motifs were found, return False. This indicates that the sequence is safe to use as is.
 
     def optimizeCodon(self, sequence, start):
+        '''
+        Organizes optimization of the codon sequence at a given start position in a DNA sequence.
+
+        This method takes a DNA sequence and a start position as input. It extracts a 12-base pair
+        (12-bp) subsequence starting from the given position and translates it into an amino acid sequence.
+        The method then calculates head and tail subsequences based on the start position and a fixed size
+        window. The head and tail subsequences are used to integrate the current window of the sliding
+        window approach with the rest of the sequence.
+
+        The method employs a Permutations object to rank the 12-bp DNA sequence based on motifs and codon preferences.
+        The resulting cleaned region is then inserted back into the original DNA sequence, replacing the original
+        12-bp sequence. The final sequence with the optimized codon is returned.
+
+        We chose a 12-bp/ 4 codon window as the longest motif we are screening is 8-bp long, and to resolve that the 
+        window must have at least a 4 codon scope. The reason that the window is not larger is to retain stochastic
+        reconstruction as much as possible, and to reduce the footprint of the pattern constraint optimization.
+        '''
         length = len(sequence)
         workingDnaSequence = sequence[start : start + 12]
 
@@ -92,7 +106,9 @@ class patternConstrainer:
 
     def optimizeSequence(self, sequence) -> str:
         """
-        understand behaviour
+        This method iterates through the input DNA sequence, looking for motifs within 12-base pair (12-bp) subsequences.
+        When a motif is found, the method calls the 'optimizeCodon' method to optimize the codon at the motif's start position.
+        The optimized DNA sequence is updated, and the process continues until all relevant motifs have been optimized.
         """
         optimizedSequence = sequence
         for i in range(9, len(sequence) - 9, 3):
@@ -110,7 +126,6 @@ class Permutations:
     only canditates with the best score for first item contenue, same with second item
     and then the 3rd item varies. This can be adjusted but allows for the prioritization
     of sorting methodologies for each specific score items. 
-    prior implementations had score bleeding issues, this is currently an open end
     """
     
     def __init__(self, motifs, frequencies):
@@ -144,6 +159,9 @@ class Permutations:
         
 
     def permute(self, amino_acid_sequence, current_codons=""):
+        '''
+        Recusive generator to produce all possible codon permutations for a given amino acid sequence. 
+        '''
         if not amino_acid_sequence:
             yield current_codons
             return
@@ -155,7 +173,11 @@ class Permutations:
             yield from self.permute(remaining_aas, current_codons + codon)
 
     def rank(self, dnaSeq, aaSeq, headAdapt, tailAdapt):
-        """ """
+        """ 
+        Organizes evalutation of each permutation (putative solution) for motifs present, stochasticity, & preferential 
+        codons to select optimal solutions. This method uses the head & tail adapter sequences to consider cases where 
+        motifs are split by the sliding window.
+        """
         ranks = []
         permutation_generator = self.permute(aaSeq)
 
@@ -193,6 +215,10 @@ class Permutations:
         return chosenOne
 
     def analyze_dna_motifs(self, sequence):
+        '''
+        Supports rank(), this method returns score values for motifs present & preferential 
+        codon useage to elute optimal solutions.
+        '''
         occurrences = {}  # Dictionary to store occurrences of short motifs
         total_occurrences = 0  # Total count of occurrences in the longer sequence
 
@@ -226,17 +252,13 @@ class Permutations:
         return total_occurrences, Score
 
     def gaugeAdherance(self, refSeq, perm):
+        '''
+        Supports rank by providing score value reflective of stochasticity (origional input is stochastic).
+        '''
         codonRef = []
         codonPerm = []
         adherance = 0
-        """
-        for i in range(0, len(refSeq), 3): #both refSeq & perm should be of the same length
-            codon = refSeq[ i : i + 3 ]
-            codonRef.append(codon)
-        for i in range(0, len(perm), 3):
-            codon = perm[ i : i + 3 ]
-            codonPerm.append(codon)
-        """
+        
         for i in range(0, len(refSeq), 3):
             refCodon = refSeq[i : i + 3]
             codonRef.append(refCodon)
@@ -255,7 +277,7 @@ class Permutations:
 
 class MotifChecker:
     """
-    helper class, used to fetch final stats in main
+    helper class, used to fetch final stats on motifs present in main
     """
 
     def __init__(self, motifs):
