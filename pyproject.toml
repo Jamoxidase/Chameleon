@@ -34,6 +34,6 @@ push = true
 "src/chameleontools/__init__.py" = ["{version}"]
 
 [tool.poetry.scripts]
-pstealth = "chameleontools.pstealth:main"
+pstealth = "chameleontools._pstealth:main"
 
 
