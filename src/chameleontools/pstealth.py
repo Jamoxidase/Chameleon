@@ -26,11 +26,13 @@ class pipeline:
         kMax: int,
         kMin: int,
         palindrome: bool = False,
+        keep: list[str] = [],
+        ignore: list[str] = []
     ) -> None:
         self.loading_bar = tqdm(total=100, desc="Reading Files")  # CLI loading bar
 
         self.stealth_input = SeqParser.StealthGenome(genome_infile)
-        self.plasmid_input = SeqParser.PlasmidParse(plasmid_infile)
+        self.plasmid_input = SeqParser.PlasmidParse(plasmid_infile, keep_annotation= keep, ignore_annotation= ignore)
 
         self.loading_bar.update(15)
 
@@ -152,14 +154,16 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(
         description="Stealth optimizes an input plasmid sequence to a given organism's genome",
-        usage=f"""pstealth --genome (-g) <genome infile> --plasmid (-p) <plasmid infile> --outfile -o [outfile | default: stdout] -[optional args -> -zPMmrs]
+        usage=f"""pstealth --genome (-g) <genome infile> --plasmid (-p) <plasmid infile> --outfile -o [outfile | default: stdout] [-zPMmrs]
             Optional Args:
                 --zScore (-z) -> [zscore cutoff value | default: -4]
                 --pseudo (-P) [pseudo-count value | default: 0]
                 --max (-M) [maximum motif size | default: 8]
                 --min (-m) [minimum motif size | default: 1]
                 --palindrome (-r) [Remove RC palindromes only | default: off]
-                --silent (-s) [Hide report message | default: show]""",
+                --silent (-s) [Hide report message | default: show]
+                --keep (-k) [Adds annotations to consider in Mutable Regions | default = {'ORF','gene','CDS'}]
+                --ignore (-i) [Adds annotations to ignore when defining Mutable Regions | default = {'source'}]""",
     )
     parser.add_argument(
         "--genome",
@@ -231,6 +235,26 @@ def main():
         action="store_true",
         help="Disable final modification report, default = show",
     )
+    
+    parser.add_argument(
+        "--keep",
+        "-k",
+        type= str,
+        default=None,
+        action="store",
+        nargs = '+',
+        help="Add plasmid annotations to what are considered mutable regions- case sensitive, Default = {'ORF','gene','CDS'}",
+    )
+    
+    parser.add_argument(
+        "--ignore",
+        "-i",
+        type= str,
+        default=None,
+        action="store",
+        nargs = '+',
+        help="Add plasmid annotations to ignore when defining mutable regions- case sensitive, Default = {'source'}",
+    )
 
     args = parser.parse_args()
 
@@ -242,9 +266,11 @@ def main():
     kMax = args.max
     kMin = args.min
     palindrome = args.palindrome
+    keep_annotation = args.keep.split(" ") if args.keep is not None else []
+    ignore_annotation = args.ignore.split(" ") if args.ignore is not None else []
 
     dummy = pipeline(
-        genome_infile, plasmid_infile, outfile, z_score, pseudo, kMax, kMin, palindrome
+        genome_infile, plasmid_infile, outfile, z_score, pseudo, kMax, kMin, palindrome, keep_annotation, ignore_annotation
     )
 
     if not args.silent:
