@@ -83,7 +83,7 @@ FEATURES             Location/Qualifiers
      misc_feature    1
 ```
 
-The above example optimizes plasmid `pSPDY.gb` for transformation into species `M_aeruginosa.gb`, removing only reverse palindrome motifs identified with StealthV0. The modifed plasmid is saved to a new file `pSPDY_stealth.gb`, keeping all the same annotations, only changing the plasmid sequence to remove underrepresented motifs in coding regions.
+The above example optimizes plasmid `pSPDY.gb` for transformation into species `M_aeruginosa.gb`, removing only reverse-complement palindrome motifs identified with StealthV0. The modifed plasmid is saved to a new file `pSPDY_stealth.gb`, keeping all the same annotations, only changing the plasmid sequence to remove underrepresented motifs in coding regions.
 
 #### chameleontools Module
 
@@ -91,7 +91,7 @@ Development of chameleontools started when we wrote software to process the Stea
 
 We recognized the usefulness of having each submodule perform their own specific tasks and have written the chameleontools package in a way that reflects that ideal.
 
-To import chameleontools as a Python module, simple import it as follows
+To import chameleontools as a Python module, simplly import it as follows
 ```python
 import chameleontools.<submodule>
 ```
@@ -106,15 +106,15 @@ import chameleontools.Stealth # Stealth analysis
 import chameleontools.StealthParser # Stealth output parser
 ```
 
-Feel free to use any and all code provided by the module to create a pipeline tailored to any specific use case.
 
 
 ## Contributing
 
-Chameleon was created for the 2023 iGEM competition and will not be maintained on this repository after the conclusion of this year's iGEM cycle. The project may be maintained [here](https://google.com) in the future. Chameleon is licenced under the [license] so you are free to modify and distribute any code found.
+Chameleon was created for the 2023 iGEM competition and will not be maintained on this repository after the conclusion of this year's iGEM cycle. The project may be maintained [here](https://google.com) in the future. Chameleon is licenced under the [license] so you are free to modify and distribute any code found. Feel free to use any and all code provided by the module to create a pipeline tailored to any specific use case.
 
 ## Authors and acknowledgment
-Stealth was written by David L. Bernick of UC Santa Cruz (contact: dbernick@soe.ucsc.edu) who advised the development of the software pipeline built around Stealth
+Stealth was written by David L. Bernick, UC Santa Cruz who advised the development of the software pipeline built around Stealth
+(contact: dbernick@soe.ucsc.edu) 
 
 Chameleon and the `chameleontools` package was written by 
 * Tyler Gaw (contact: tagaw@ucsc.edu)
