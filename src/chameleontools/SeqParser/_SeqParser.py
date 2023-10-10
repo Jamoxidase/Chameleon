@@ -77,7 +77,7 @@ class StealthGenome:
 
             self.getGenome() -> array of Seq()
 
-            self.getCDS() -> Iterator of Biopython SeqRecord for each CDS | list of SeqRecord if using FastA file
+            self.getCDS() -> List of SeqRecord
 
             self.filetype() -> type of input file | "fasta" if FastA file, "genbank" if GenBank file
         """
@@ -97,36 +97,36 @@ class StealthGenome:
                 )
                 self.input = "fasta"
             else:
-                self.cds_sequence = self.Stealth_CDS_Extract(genome_infile)
-                self.genome_sequence = self.genome_sequence
+                self.cds_sequence,self.genome_sequence = self._Stealth_CDS_Extract(genome_infile)
                 self.input = "genbank"
 
-    def Stealth_CDS_Extract(self, gbfile: str) -> Iterator[SeqRecord]:
+    def _Stealth_CDS_Extract(self, gbfile: str) -> tuple[list[Seq],Iterator[SeqRecord]]:
         """Generator for CDSs in a GenBank file
         
         Args:
             gbfile (str): input GenBank file
         """
-        gb = SeqIO.parse(gbfile, "genbank")
-        count = 0
+        gb = SeqIO.parse(gbfile, "genbank") 
         for rec in gb:
-            self.genome_sequence = [
+            genome_sequence = [
                 rec.seq
             ]  # define self.genome_sequence from genbank record
-            for feature in rec.features:
-                if feature.type == "CDS" or feature.type == "ORF":
-                    count += 1
-                    out = feature.extract(rec)
+            def _generator() -> Iterator[SeqRecord]:
+                count = 0
+                for feature in rec.features:
+                    if feature.type == "CDS" or feature.type == "ORF":
+                        count += 1
+                        out = feature.extract(rec)
 
-                    """Set the description to 'product' qualifier if avaiable. Else use 'label' qualifier or [null] if labels are not present"""
-                    out.description = feature.qualifiers.get(
-                        "product", feature.qualifiers.get("label", ["null"])
-                    )[0]
+                        """Set the description to 'product' qualifier if avaiable. Else use 'label' qualifier or [null] if labels are not present"""
+                        out.description = feature.qualifiers.get(
+                            "product", feature.qualifiers.get("label", ["null"])
+                        )[0]
 
-                    out.name = "TEMP CDS HEADER"
-                    out.id = f"CDS_{count} CODON STATS"
-                    yield out
-            return  # Only accepts single entry genbank records
+                        out.name = "TEMP CDS HEADER"
+                        out.id = f"CDS_{count} CODON STATS"
+                        yield out
+            return  _generator(), genome_sequence  # Only accepts single entry genbank records
 
     def filetype(self) -> Literal["fasta", "genbank"]:
         """Returns filetype of input file
@@ -144,7 +144,7 @@ class StealthGenome:
         """
         return self.genome_sequence
 
-    def getCDS(self) -> Iterator[SeqRecord] | list[SeqRecord]:
+    def getCDS(self) -> list[SeqRecord]:
         """Returns iterable of CDS regions
 
         Returns:
@@ -183,18 +183,26 @@ class PlasmidParse:
         Returns:
             tuple[list[SimpleLocation], list[SimpleLocation]]: regions to avoid and CDS regions
         """
-        avoid, cds = [], []
+        avoid, cds = set(),set() # sets to avoid duplicate annotation regions
         gb = SeqIO.parse(gbfile, "genbank")
         for rec in gb:
             self.record = rec
             for feature in rec.features:
-                if feature.type in {"source", "gene"}:
+                '''SimpleLocation unhashable, break down into data and recreate object'''
+                simpLoc = feature.location
+                simpLoc_data = (simpLoc.start,simpLoc.end,simpLoc.strand)
+                feat_data = (simpLoc_data, simpLoc.start % 3) # keeps location, frame
+                if feature.type in self.ignore_annotations:
                     continue
-                if feature.type in {"CDS", "ORF"}:
-                    cds.append((feature.location, feature.location.start % 3))
+                if feature.type in self.keep_annotations: 
+                    cds.add(feat_data)
                 else:
-                    avoid.append((feature.location, feature.location.start % 3))
+                    avoid.add(feat_data)
             break  # Only handles single entry genbank records
+        
+        '''recreate SimpleLocation objects'''
+        avoid = [(SimpleLocation(x[0],x[1],x[2]),y) for x,y in avoid]
+        cds = [(SimpleLocation(x[0],x[1],x[2]),y) for x,y in cds] 
         return avoid, cds
 
     def _trimStart(
@@ -323,7 +331,7 @@ class PlasmidParse:
     # Private Helper Functions
     ############################################################################################
 
-    def __init__(self, plasmid_infile: str) -> None:
+    def __init__(self, plasmid_infile: str, keep_annotation = [], ignore_annotation = []) -> None:
         """Validates inputs, parses out mutable regions
 
         Args:
@@ -352,6 +360,14 @@ class PlasmidParse:
             )
             exit()
 
+        self.keep_annotations = {"CDS","ORF","gene"}
+        self.ignore_annotations = {"source"}
+        
+        for annotation in keep_annotation:
+            self.keep_annotations.add(annotation)
+        for annotation in ignore_annotation:
+            self.ignore_annotations.add(annotation)
+        
         "Did this cause it was ugly when using tuple unpacking"
         temp_parse = self._parsePlasmid(plasmid_infile)
 

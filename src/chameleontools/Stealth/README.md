@@ -72,3 +72,19 @@ This work is protected with a UC Santa Cruz Noncommercial License. Please see th
 
 ## Project status
 Still in active development as needed.
+
+## Modifications
+
+```text
+Stealth.V0.py
+- Stealth.V0.py filename changed -> _stealth.py
+- __all__ defined
+
+__init__.py
+- Created for the Stealth package module
+- Imports everything from _stealth.py as defined by __all__
+
+_stealthClass.py
+- StealthV0 class to store Stealth analysis as a Python Object
+```
+
