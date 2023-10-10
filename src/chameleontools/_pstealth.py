@@ -240,7 +240,7 @@ def main():
         "-k",
         "--keep",
         type= str,
-        default=None,
+        default= None,
         action="store",
         nargs = '+',
         help="Add plasmid annotations to what are considered mutable regions- case sensitive, Default = {'ORF','gene','CDS'}",
@@ -250,7 +250,7 @@ def main():
         "-i",
         "--ignore",
         type= str,
-        default=None,
+        default= None,
         action="store",
         nargs = '+',
         help="Add plasmid annotations to ignore when defining mutable regions- case sensitive, Default = {'source'}",
@@ -266,9 +266,9 @@ def main():
     kMax = args.max
     kMin = args.min
     palindrome = args.palindrome
-    keep_annotation = args.keep.split(" ") if args.keep is not None else []
-    ignore_annotation = args.ignore.split(" ") if args.ignore is not None else []
-
+    keep_annotation = args.keep if args.keep is not None else []
+    ignore_annotation = args.ignore if args.ignore is not None else []
+    
     dummy = pipeline(
         genome_infile, plasmid_infile, outfile, z_score, pseudo, kMax, kMin, palindrome, keep_annotation, ignore_annotation
     )
