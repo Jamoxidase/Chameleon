@@ -1,18 +1,26 @@
 # Chameleon
 
-UCSC TABI presents Chameleon, a pipeline and collection of software based around Stealth that optimizes plasmids for bacterial transformation efficiency in non-model organisms.
+UCSC TABI presents project Chameleon, a pipeline and software package that optimizes plasmids for bacterial transformation efficiency in non-model organisms.
 
 
 
 ## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might
-be unfamiliar with (for example your team wiki). A list of Features or a Background subsection can also be added here.
-If there are alternatives to your project, this is a good place to list differentiating factors.
+
+Chameleon is a software project written for UCSC TABI as a submission for the Best Software award for iGEM 2023. For more information on anything here, visit our [team wiki](https://2023.igem.wiki/ucsc/software)
+
+`pstealth` is a software pipeline included in Chameleon built around Stealth. Stealth is a bioinformatics tool written by our PI David L. Bernick here a UCSC. Stealth statistically finds and reports underrepresented kmer motifs within a genome. The original version of Stealth can be found [here](https://git.ucsc.edu/dbernick/stealth).
+
+Chameleon is published as a python package to the Python Package Index (PyPI) under the package `chameleontools`. Find the PyPI page for the project [here](https://pypi.org/project/chameleontools/).
+
 
 ## Installation
-Installing chameleontools is made simple with the pip python package installer. 
+Installation steps are tailored to Mac/Unix-based operating systems. For instruction for Windows, skip to **Windows OS**
 
-The pip installer should be automatically installed with most python distributions. Check if you have properly installed python and pip installer, the output should look similar
+##### MacOS/Linux (Ubuntu 20.04)
+
+Chameleon can be installed under the Python package `chameleontools`. Installation is made simple with the pip python package installer. 
+
+The pip installer should be automatically installed with most Python distributions. Check if you have properly installed python and pip installer, the output should look similar
 ```bash
 usr:~$ python --version
 Python 3.x.x
@@ -46,6 +54,40 @@ usr:~$ pip install chameleontools
 usr:~$ python -m pip install chameleontools
 ```
 with a valid pip installer to install the chameleontools package from the Python Package Index (PyPI)
+
+##### Windows Installation
+Installation on Windows requires a```Path``` environment variable be set for ```pstealth``` to be run as a CLI tool. Firstly, make sure Python 3.10+ is installed from [python.org](https://www.python.org/downloads/) or other distribution.
+
+Validate that Python and a valid pip installer are installed using the command in the command prompt or Windows powershell
+```bat
+C:\usr>python --version
+Python 3.x.x
+C:\usr>python -m pip --version 
+pip X.Y.Z from C:\<path>\<to>\<your>\pip (python 3.x.x)
+```
+
+Install chameleontools with the command
+```bat
+C:\usr>python -m pip install chameleontools
+```
+If running `pstealth` gives an output that looks like the following
+```bat
+C:\usr>pstealth -h
+'pstealth' is not recognized as an internal or external command,
+operable program or batch file.
+C:\usr>
+```
+continue to the following section. If pstealth runs normally (prints usage information), chameleontools is properly installed and you can ignore the following section.
+
+###### Adding to Path 
+You must add the Python `Scripts` directory to your `Path` environment variables. This can be done by navigating to your `Scripts` directory where `pstealth.exe` is located. This is most likely under the path `C:\Users\<USER>\AppData\Local\Programs\Python\Python3<x>\Scripts` where `<USER>` is the local Windows user profile and `Python3<x>` represents the version of your Python installation (eg. `Python312`). Once naviagted to your `Scripts` directory, save the filepath.
+
+In the Windows search (hitting the windows button), type and enter `run` and then enter `sysdm.cpl` into the dialog box that pops up. This opens up a new window titled `System Properties`. From there navigate to the `Advance` tab and select `Environment Variables`. From there, scroll until you see a `Path` variable, select, and click `Edit`. In the `Edit Environment Variable` window, select `New` and paste the filepath you saved into the new text box.
+
+If you do not see a `Path` variable, simply select `New` in the `Environment Variables` window and create a new variable named `Path` with the value of your saved file path.
+
+Once done, `pstealth` should be able to be used from the commandline as intended.
+
 
 
 ## Usage
@@ -106,18 +148,21 @@ import chameleontools.Stealth # Stealth analysis
 import chameleontools.StealthParser # Stealth output parser
 ```
 
+Visit each submodule's folder for detailed README documentation. 
 
 
 ## Contributing
 
-Chameleon was created for the 2023 iGEM competition and will not be maintained on this repository after the conclusion of this year's iGEM cycle. The project may be maintained [here](https://google.com) in the future. Chameleon is licenced under the [license] so you are free to modify and distribute any code found. Feel free to use any and all code provided by the module to create a pipeline tailored to any specific use case.
+Chameleon was created for the 2023 iGEM competition and will not be maintained on this repository after the conclusion of this year's iGEM cycle. 
+
+This software is published under the MIT license. Feel free to use any and all code provided by the project in any way and for any purpose.
 
 ## Authors and acknowledgment
-Stealth was written by David L. Bernick, UC Santa Cruz who advised the development of the software pipeline built around Stealth
-(contact: dbernick@soe.ucsc.edu) 
+Stealth was written by our PI David L. Bernick at UC Santa Cruz who advised the development of the `pstealth` pipeline (contact: dbernick@soe.ucsc.edu) 
 
-Chameleon and the `chameleontools` package was written by 
+Chameleon was written and contributed to by 
 * Tyler Gaw (contact: tagaw@ucsc.edu)
+* Allison Jaballas (contact: acjaball@ucsc.edu)
 * James Larbaleister (contact: jlarbale@ucsc.edu)
 
-Special thanks to Reto Stamm (contact: rstamm@ucsc.edu | [github](https://github.com/retospect)) for guidance in developing and publishing a packge to the Python Package Index (PyPI)
+Special thanks to Reto Stamm (contact: rstamm@ucsc.edu | [github](https://github.com/retospect)) for guidance in developing and publishing a packge to the Python Package Index
