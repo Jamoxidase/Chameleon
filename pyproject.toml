@@ -3,7 +3,7 @@ name = "chameleontools"
 version = "0.2.0"
 description = "A Stealth-based pipeline that optimizes plasmids for bacterial transformations in non-model organisms."
 authors = ["Your Name <you@example.com>"]
-license = "CC BY"
+license = "MIT"
 readme = "README.md"
 classifiers = [ 
     "Programming Language :: Python :: 3"
