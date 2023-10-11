@@ -262,7 +262,7 @@ def main():
     plasmid_infile = args.plasmid
     outfile = args.outfile
     z_score = args.zScore
-    pseudo = args.pseudo
+    pseudo = args.pseudo if args.pseudo >= 0 else 0
     kMax = args.max
     kMin = args.min
     palindrome = args.palindrome
