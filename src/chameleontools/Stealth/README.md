@@ -1,9 +1,11 @@
 ## UCSC TABI
-Stealth is written by David L. Bernick as UC Santa Cruz. The original version of Stealth can be found [here](https://git.ucsc.edu/dbernick/stealth).
+Stealth is written by David L. Bernick at UC Santa Cruz. The original version of Stealth can be found [here](https://git.ucsc.edu/dbernick/stealth).
 
 ## Modifications
-Below are all the modifications from the original Stealth as written by David Bernick.
+Below are all the modifications made the to the original Stealth for use in `chameleontools`.
 ```text
+## Modification for chameleontools Stealth module
+
 Stealth.V0.py
 - Stealth.V0.py filename changed -> _stealth.py
 - __all__ defined 
