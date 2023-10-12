@@ -6,7 +6,7 @@ UCSC TABI presents project Chameleon, a pipeline and software package that optim
 
 ## Description
 
-Chameleon is a software project written for UCSC TABI as a submission for the Best Software award for iGEM 2023. For more information on anything here, visit our [team wiki](https://2023.igem.wiki/ucsc/software)
+Chameleon is a software project written for UCSC TABI as a submission for the Best Software award for iGEM 2023. For more information on the Chameleon software project, visit our [team wiki](https://2023.igem.wiki/ucsc/software)
 
 The Chameleon project is based around Stealth which is a bioinformatics tool written by our PI David L. Bernick here a UCSC. Stealth statistically finds and reports underrepresented kmer motifs within a genome. The original version of Stealth can be found [here](https://git.ucsc.edu/dbernick/stealth).
 
@@ -59,7 +59,7 @@ usr:~$ python -m pip install chameleontools
 with a valid pip installer to install the chameleontools package from the Python Package Index (PyPI)
 
 ##### Windows Installation
-Installation on Windows requires a```Path``` environment variable be set for ```pstealth``` to be run as a CLI tool. Firstly, make sure Python 3.10+ is installed from [python.org](https://www.python.org/downloads/) or other distribution.
+Installation on Windows requires a```Path``` environment variable be set inorder for ```pstealth``` to be run as a CLI tool. Firstly, make sure Python 3.10+ is installed from [python.org](https://www.python.org/downloads/) or other distribution.
 
 Validate that Python and a valid pip installer are installed using the command in the command prompt or Windows powershell
 ```bat
@@ -83,9 +83,9 @@ C:\usr>
 continue to the following section. If pstealth runs normally (prints usage information), chameleontools is properly installed and you can ignore the following section.
 
 ###### Adding to Path 
-You must add the Python `Scripts` directory to your `Path` environment variables. This can be done by navigating to your `Scripts` directory where `pstealth.exe` is located. This is most likely under the path `C:\Users\<USER>\AppData\Local\Programs\Python\Python3<x>\Scripts` where `<USER>` is the local Windows user profile and `Python3<x>` represents the version of your Python installation (eg. `Python312`). Once naviagted to your `Scripts` directory, save the filepath.
+You must add the Python `Scripts` directory to your `Path` environment variables. This can be done by navigating to your `Scripts` directory where `pstealth.exe` is located. This is most likely under the path `C:\Users\<USER>\AppData\Local\Programs\Python\Python3<x>\Scripts` where `<USER>` is the local Windows user profile and `Python3<x>` represents the version of your Python installation (eg. `Python310`). Once naviagted to your `Scripts` directory, save the filepath.
 
-In the Windows search (hitting the windows button), type and enter `run` and then enter `sysdm.cpl` into the dialog box that pops up. This opens up a new window titled `System Properties`. From there navigate to the `Advance` tab and select `Environment Variables`. From there, scroll until you see a `Path` variable, select, and click `Edit`. In the `Edit Environment Variable` window, select `New` and paste the filepath you saved into the new text box.
+In the Windows search (hitting the windows button), type and enter `run` and then enter `sysdm.cpl` into the dialog box that pops up. This opens up a new window titled `System Properties`. From there, navigate to the `Advance` tab and select `Environment Variables`. From there, scroll until you see a `Path` variable, select, and click `Edit`. In the `Edit Environment Variable` window, select `New` and paste the filepath you saved into the new text box.
 
 If you do not see a `Path` variable, simply select `New` in the `Environment Variables` window and create a new variable named `Path` with the value of your saved file path.
 
@@ -109,8 +109,8 @@ pstealth --genome (-g) <genome infile> --plasmid (-p) <plasmid infile> --outfile
                 --silent (-s) [Hide report message | default: show]
 ```
 The `pstealth` command takes two required arguments `--plasmid (-p)` and `--genome (-g)`. 
-`--plasmid` is the annotated plasmid which you wish to Stealth optimize in GenBank format (.gb/.gbk)
-`--genome` is the genomic sequence of the species you wish transform your plasmid into in GenBank or FastA format (.gb/.gbk || .fasta/.fa)
+`--plasmid` is the annotated plasmid which you wish to Stealth optimize in GenBank record format (.gb/.gbk)
+`--genome` is the genomic sequence of the species you wish transform your plasmid into in GenBank record or FastA format (.gb/.gbk || .fasta/.fa)
 
 An example usage is as follows
 ```bash
@@ -136,7 +136,7 @@ Development of the Chameleon project and chameleontools started when we wrote so
 
 We recognized the usefulness of having each submodule perform their own specific tasks and have written the chameleontools package in a way that reflects that ideal.
 
-To import chameleontools as a Python module, simplly import it as follows
+To import chameleontools as a Python module, simply import it as follows
 ```python
 import chameleontools.<submodule>
 ```
@@ -151,19 +151,19 @@ import chameleontools.Stealth # Stealth analysis
 import chameleontools.StealthParser # Stealth output parser
 ```
 
-For detailed documentation on the contents of each module, visit the <b>Documentation</b> of the [software page](https://2023.igem.wiki/ucsc/software) on our team's wiki. 
+For detailed documentation on the contents of each module, visit the <b>Documentation</b> on the [software page](https://2023.igem.wiki/ucsc/software) on our team's wiki. 
 
 
 ## Contributing
 
 Chameleon is open to any and all contributions.
 
-Chameleon was created for the 2023 iGEM competition and will not be maintained on this repository after the conclusion of this year's iGEM cycle. 
+Chameleon was created for the 2023 iGEM competition and will not be maintained on this repository after the conclusion of this year's iGEM cycle. See the [PyPI](https://pypi.org/project/chameleontools/) page for `chameleontools` to look for future maintenance.
 
 This software is published under the MIT license. Feel free to use any and all code provided by the project in any way and for any purpose.
 
 ## Authors and acknowledgment
-Stealth was written by our PI David L. Bernick at UC Santa Cruz who advised the development of the `pstealth` pipeline (contact: dbernick@soe.ucsc.edu) 
+Stealth is lab software written by our PI David L. Bernick at UC Santa Cruz; who advised the development of the `pstealth` pipeline (contact: dbernick@soe.ucsc.edu) 
 
 Chameleon was written and contributed to by 
 * Tyler Gaw (contact: tagaw@ucsc.edu)
