@@ -1,6 +1,25 @@
+## UCSC TABI
+Stealth is written by David L. Bernick as UC Santa Cruz. The original version of Stealth can be found [here](https://git.ucsc.edu/dbernick/stealth).
+
+## Modifications
+Below are all the modifications from the original Stealth as written by David Bernick.
+```text
+Stealth.V0.py
+- Stealth.V0.py filename changed -> _stealth.py
+- __all__ defined 
+
+__init__.py | New file, written for chameleontools
+- Created for the Stealth package module
+- Imports everything from _stealth.py as defined by __all__
+
+_stealthClass.py | New file, written for chameleontools
+- StealthV0 class to store Stealth analysis as a Python Object
+```
+
 # Stealth
 
 Stealth looks for under-represented Kmers in a genome file by using a statistical model to establish  an expected count of a Kmer and comparing that to what is actually there.
+
 
 ## Background
 ### Null Model derivation
@@ -73,18 +92,5 @@ This work is protected with a UC Santa Cruz Noncommercial License. Please see th
 ## Project status
 Still in active development as needed.
 
-## Modifications
 
-```text
-Stealth.V0.py
-- Stealth.V0.py filename changed -> _stealth.py
-- __all__ defined
-
-__init__.py
-- Created for the Stealth package module
-- Imports everything from _stealth.py as defined by __all__
-
-_stealthClass.py
-- StealthV0 class to store Stealth analysis as a Python Object
-```
 
