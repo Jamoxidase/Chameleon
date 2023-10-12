@@ -5,7 +5,7 @@ Module: CodonAnalyzer
 
 Description: Classes to calculate codon usage statistics based on a collection of CDS from an organism
 
-Author: Tyler Gaw, James Larbalestier
+Author: Tyler Gaw, Allison Jaballas, James Larbalestier
 """
 
 from ._CodonAnalyzer import *
