@@ -1,6 +1,8 @@
 """
 TABI - UCSC iGEM 2023
 
+Module: StealthParser
+
 Classes to parse Stealth output and isolate restricted motifs
 
 Author: Tyler Gaw
