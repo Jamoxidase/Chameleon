@@ -8,7 +8,10 @@ UCSC TABI presents project Chameleon, a pipeline and software package that optim
 
 Chameleon is a software project written for UCSC TABI as a submission for the Best Software award for iGEM 2023. For more information on anything here, visit our [team wiki](https://2023.igem.wiki/ucsc/software)
 
-`pstealth` is a software pipeline included in Chameleon built around Stealth. Stealth is a bioinformatics tool written by our PI David L. Bernick here a UCSC. Stealth statistically finds and reports underrepresented kmer motifs within a genome. The original version of Stealth can be found [here](https://git.ucsc.edu/dbernick/stealth).
+The Chameleon project is based around Stealth which is a bioinformatics tool written by our PI David L. Bernick here a UCSC. Stealth statistically finds and reports underrepresented kmer motifs within a genome. The original version of Stealth can be found [here](https://git.ucsc.edu/dbernick/stealth).
+
+Stealth is included in Chameleon under the sub-module `Stealth` in the `chameleontools` package. The `Stealth` sub-module contains the original Stealth as written by David Bernick with minimal modifications. To see the specific modifications made, see the `README` located in the `Stealth` sub-module located in [`src/chameleontools/Stealth`](https://gitlab.igem.org/2023/software-tools/ucsc/-/tree/main/src/chameleontools/Stealth) 
+
 
 Chameleon is published as a python package to the Python Package Index (PyPI) under the package `chameleontools`. Find the PyPI page for the project [here](https://pypi.org/project/chameleontools/).
 
@@ -129,7 +132,7 @@ The above example optimizes plasmid `pSPDY.gb` for transformation into species `
 
 #### chameleontools Module
 
-Development of chameleontools started when we wrote software to process the Stealth output of <em>M.aeruginosa</em> and realized we could write a pipeline to automate what was a manual and time consuming process. This software ultimately became what is now the `StealthParser` module.
+Development of the Chameleon project and chameleontools started when we wrote software to process the Stealth output of <em>M.aeruginosa</em> and realized we could write a pipeline to automate what was a manual and time consuming process. This software ultimately became what is now the `StealthParser` module.
 
 We recognized the usefulness of having each submodule perform their own specific tasks and have written the chameleontools package in a way that reflects that ideal.
 
@@ -148,10 +151,12 @@ import chameleontools.Stealth # Stealth analysis
 import chameleontools.StealthParser # Stealth output parser
 ```
 
-Visit each submodule's folder for detailed README documentation. 
+For detailed documentation on the contents of each module, visit the <b>Documentation</b> of the [software page](https://2023.igem.wiki/ucsc/software) on our team's wiki. 
 
 
 ## Contributing
+
+Chameleon is open to any and all contributions.
 
 Chameleon was created for the 2023 iGEM competition and will not be maintained on this repository after the conclusion of this year's iGEM cycle. 
 
