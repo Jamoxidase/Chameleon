@@ -167,7 +167,6 @@ Stealth is lab software written by our PI David L. Bernick at UC Santa Cruz; who
 
 Chameleon was written and contributed to by 
 * Tyler Gaw (contact: tagaw@ucsc.edu)
-* Allison Jaballas (contact: acjaball@ucsc.edu)
 * James Larbaleister (contact: jlarbale@ucsc.edu)
 
 Special thanks to Reto Stamm (contact: rstamm@ucsc.edu | [github](https://github.com/retospect)) for guidance in developing and publishing a packge to the Python Package Index
